@@ -1,0 +1,281 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-74.65, 3.78],
+          [-74.05, 3.72],
+          [-73.95, 4.12],
+          [-74.15, 4.48],
+          [-74.62, 4.35],
+          [-74.72, 4.02],
+          [-74.65, 3.78]
+        ]]
+      },
+      "properties": {
+        "paramo_name": "Sumapaz",
+        "department": "Cundinamarca, Meta, Huila",
+        "cordillera": "Cordillera Oriental",
+        "area_km2": 333420,
+        "protection_status": "National Park",
+        "description": "The world's largest páramo complex, spanning three departments and serving as the primary water source for Bogotá and surrounding municipalities."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-74.02, 4.32],
+          [-73.48, 4.28],
+          [-73.42, 4.65],
+          [-73.65, 4.88],
+          [-74.05, 4.78],
+          [-74.10, 4.52],
+          [-74.02, 4.32]
+        ]]
+      },
+      "properties": {
+        "paramo_name": "Chingaza",
+        "department": "Cundinamarca, Meta",
+        "cordillera": "Cordillera Oriental",
+        "area_km2": 76600,
+        "protection_status": "National Park",
+        "description": "A high-altitude páramo national park that supplies approximately 80% of Bogotá's drinking water through its extensive wetland and lagoon systems."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-74.38, 4.18],
+          [-73.85, 4.15],
+          [-73.78, 4.42],
+          [-74.02, 4.62],
+          [-74.35, 4.58],
+          [-74.45, 4.38],
+          [-74.38, 4.18]
+        ]]
+      },
+      "properties": {
+        "paramo_name": "Cruz Verde-Sumapaz",
+        "department": "Cundinamarca",
+        "cordillera": "Cordillera Oriental",
+        "area_km2": 118500,
+        "protection_status": "Regional Protected Area",
+        "description": "A transitional páramo complex connecting the Bogotá savanna to the higher Sumapaz plateau, important for biodiversity and regional water regulation."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-73.82, 5.32],
+          [-73.28, 5.28],
+          [-73.22, 5.65],
+          [-73.48, 5.85],
+          [-73.85, 5.78],
+          [-73.92, 5.52],
+          [-73.82, 5.32]
+        ]]
+      },
+      "properties": {
+        "paramo_name": "Rabanal",
+        "department": "Boyacá, Cundinamarca",
+        "cordillera": "Cordillera Oriental",
+        "area_km2": 54900,
+        "protection_status": "Regional Protected Area",
+        "description": "A fragmented páramo complex on the Boyacá-Cundinamarca border, severely threatened by coal mining, potato agriculture, and livestock grazing."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-72.72, 5.68],
+          [-72.18, 5.72],
+          [-72.12, 6.12],
+          [-72.38, 6.28],
+          [-72.78, 6.22],
+          [-72.85, 5.95],
+          [-72.72, 5.68]
+        ]]
+      },
+      "properties": {
+        "paramo_name": "Pisba",
+        "department": "Boyacá, Casanare",
+        "cordillera": "Cordillera Oriental",
+        "area_km2": 91200,
+        "protection_status": "National Park",
+        "description": "A remote páramo national park on the eastern flank of the Cordillera Oriental, known for its intact high-Andean ecosystems and historical significance from the Bolívar campaign."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-75.68, 4.58],
+          [-75.02, 4.52],
+          [-74.95, 4.92],
+          [-75.18, 5.22],
+          [-75.65, 5.18],
+          [-75.78, 4.92],
+          [-75.68, 4.58]
+        ]]
+      },
+      "properties": {
+        "paramo_name": "Los Nevados",
+        "department": "Caldas, Risaralda, Quindío, Tolima",
+        "cordillera": "Cordillera Central",
+        "area_km2": 583000,
+        "protection_status": "National Park",
+        "description": "A volcanic national park containing glaciers on Nevado del Ruiz, Nevado del Tolima, and other snow-capped peaks, representing one of Colombia's most iconic Andean landscapes."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-76.38, 6.72],
+          [-75.72, 6.68],
+          [-75.68, 7.08],
+          [-75.88, 7.28],
+          [-76.32, 7.22],
+          [-76.45, 6.98],
+          [-76.38, 6.72]
+        ]]
+      },
+      "properties": {
+        "paramo_name": "Frontino-Urrao",
+        "department": "Antioquia",
+        "cordillera": "Cordillera Occidental",
+        "area_km2": 65800,
+        "protection_status": "Regional Protected Area",
+        "description": "An isolated páramo massif in western Antioquia, harboring endemic species and serving as a critical water source for the Urrao and surrounding municipalities."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-76.38, 2.62],
+          [-75.72, 2.58],
+          [-75.68, 3.02],
+          [-75.92, 3.28],
+          [-76.32, 3.22],
+          [-76.45, 2.92],
+          [-76.38, 2.62]
+        ]]
+      },
+      "properties": {
+        "paramo_name": "Nevado del Huila",
+        "department": "Huila, Cauca, Tolima",
+        "cordillera": "Cordillera Central",
+        "area_km2": 158000,
+        "protection_status": "National Park",
+        "description": "Colombia's highest active volcano surrounded by glacier-capped páramo ecosystems, a sacred site for the Nasa indigenous people and a critical source of freshwater for the upper Magdalena basin."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-76.42, 4.92],
+          [-75.88, 4.88],
+          [-75.82, 5.28],
+          [-76.02, 5.48],
+          [-76.38, 5.42],
+          [-76.52, 5.18],
+          [-76.42, 4.92]
+        ]]
+      },
+      "properties": {
+        "paramo_name": "Tatamá",
+        "department": "Risaralda, Chocó, Valle del Cauca",
+        "cordillera": "Cordillera Occidental",
+        "area_km2": 51900,
+        "protection_status": "National Park",
+        "description": "A biodiverse national park on the Cordillera Occidental with páramo ecosystems at its highest elevations, featuring exceptional bird diversity and intact cloud forest transitions."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-74.18, 10.58],
+          [-73.52, 10.62],
+          [-73.45, 11.02],
+          [-73.72, 11.22],
+          [-74.15, 11.18],
+          [-74.28, 10.88],
+          [-74.18, 10.58]
+        ]]
+      },
+      "properties": {
+        "paramo_name": "Sierra Nevada de Santa Marta",
+        "department": "Magdalena, César, La Guajira",
+        "cordillera": "Sierra Nevada",
+        "area_km2": 221000,
+        "protection_status": "National Park",
+        "description": "The world's highest coastal mountain range with isolated páramo and glacial ecosystems, home to four indigenous groups and classified as a UNESCO Biosphere Reserve."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-73.12, 7.22],
+          [-72.52, 7.18],
+          [-72.45, 7.58],
+          [-72.68, 7.82],
+          [-73.08, 7.75],
+          [-73.22, 7.52],
+          [-73.12, 7.22]
+        ]]
+      },
+      "properties": {
+        "paramo_name": "Santurbán",
+        "department": "Norte de Santander, Santander",
+        "cordillera": "Cordillera Oriental",
+        "area_km2": 142000,
+        "protection_status": "Regional Protected Area",
+        "description": "A heavily contested páramo complex where water supply for Bucaramanga and Cúcuta conflicts directly with major gold and silver mining concessions granted by the national government."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-75.95, 6.38],
+          [-75.38, 6.35],
+          [-75.32, 6.72],
+          [-75.55, 6.92],
+          [-75.92, 6.88],
+          [-76.05, 6.62],
+          [-75.95, 6.38]
+        ]]
+      },
+      "properties": {
+        "paramo_name": "Belmira",
+        "department": "Antioquia",
+        "cordillera": "Cordillera Central",
+        "area_km2": 50200,
+        "protection_status": "Regional Protected Area",
+        "description": "A small but ecologically significant páramo district in northern Antioquia, providing water to several municipalities and hosting rare endemic frailejón species."
+      }
+    }
+  ]
+}

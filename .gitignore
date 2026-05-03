@@ -1,0 +1,15 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+*.lyrx
+
+# Secrets / local overrides
+.env
+.env.local
+
+# Node (if ever needed)
+node_modules/

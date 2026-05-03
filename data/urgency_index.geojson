@@ -1,0 +1,725 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-74.15, 4.40],
+          [-73.95, 4.40],
+          [-73.85, 4.05],
+          [-74.05, 3.70],
+          [-74.45, 3.70],
+          [-74.55, 4.05],
+          [-74.15, 4.40]
+        ]]
+      },
+      "properties": {"urgency_score": 4.8, "urgency_class": "Very High", "endemic_richness_score": 5, "agriculture_pressure": 4, "fire_pressure": 5, "urban_pressure": 3, "mining_pressure": 2, "paramo_name": "Sumapaz", "dominant_threat": "Fire"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-74.55, 4.40],
+          [-74.35, 4.40],
+          [-74.25, 4.05],
+          [-74.45, 3.70],
+          [-74.85, 3.70],
+          [-74.95, 4.05],
+          [-74.55, 4.40]
+        ]]
+      },
+      "properties": {"urgency_score": 4.5, "urgency_class": "High", "endemic_richness_score": 4, "agriculture_pressure": 5, "fire_pressure": 4, "urban_pressure": 2, "mining_pressure": 1, "paramo_name": "Sumapaz", "dominant_threat": "Agriculture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-73.75, 4.40],
+          [-73.55, 4.40],
+          [-73.45, 4.05],
+          [-73.65, 3.70],
+          [-74.05, 3.70],
+          [-74.15, 4.05],
+          [-73.75, 4.40]
+        ]]
+      },
+      "properties": {"urgency_score": 3.8, "urgency_class": "Moderate", "endemic_richness_score": 3, "agriculture_pressure": 4, "fire_pressure": 3, "urban_pressure": 4, "mining_pressure": 2, "paramo_name": "Sumapaz", "dominant_threat": "Urban expansion"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-73.95, 4.80],
+          [-73.75, 4.80],
+          [-73.65, 4.45],
+          [-73.85, 4.10],
+          [-74.25, 4.10],
+          [-74.35, 4.45],
+          [-73.95, 4.80]
+        ]]
+      },
+      "properties": {"urgency_score": 4.2, "urgency_class": "High", "endemic_richness_score": 5, "agriculture_pressure": 3, "fire_pressure": 4, "urban_pressure": 3, "mining_pressure": 2, "paramo_name": "Chingaza", "dominant_threat": "Climate"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-73.55, 4.80],
+          [-73.35, 4.80],
+          [-73.25, 4.45],
+          [-73.45, 4.10],
+          [-73.85, 4.10],
+          [-73.95, 4.45],
+          [-73.55, 4.80]
+        ]]
+      },
+      "properties": {"urgency_score": 4.0, "urgency_class": "High", "endemic_richness_score": 4, "agriculture_pressure": 4, "fire_pressure": 3, "urban_pressure": 4, "mining_pressure": 1, "paramo_name": "Chingaza", "dominant_threat": "Urban expansion"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-74.35, 4.80],
+          [-74.15, 4.80],
+          [-74.05, 4.45],
+          [-74.25, 4.10],
+          [-74.65, 4.10],
+          [-74.75, 4.45],
+          [-74.35, 4.80]
+        ]]
+      },
+      "properties": {"urgency_score": 3.5, "urgency_class": "Moderate", "endemic_richness_score": 3, "agriculture_pressure": 4, "fire_pressure": 3, "urban_pressure": 3, "mining_pressure": 2, "paramo_name": "Cruz Verde-Sumapaz", "dominant_threat": "Agriculture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-74.15, 4.80],
+          [-73.95, 4.80],
+          [-73.85, 4.45],
+          [-74.05, 4.10],
+          [-74.45, 4.10],
+          [-74.55, 4.45],
+          [-74.15, 4.80]
+        ]]
+      },
+      "properties": {"urgency_score": 3.9, "urgency_class": "Moderate", "endemic_richness_score": 4, "agriculture_pressure": 3, "fire_pressure": 4, "urban_pressure": 4, "mining_pressure": 2, "paramo_name": "Cruz Verde-Sumapaz", "dominant_threat": "Fire"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-72.62, 7.65],
+          [-72.42, 7.65],
+          [-72.32, 7.30],
+          [-72.52, 6.95],
+          [-72.92, 6.95],
+          [-73.02, 7.30],
+          [-72.62, 7.65]
+        ]]
+      },
+      "properties": {"urgency_score": 5.0, "urgency_class": "Very High", "endemic_richness_score": 5, "agriculture_pressure": 4, "fire_pressure": 4, "urban_pressure": 3, "mining_pressure": 5, "paramo_name": "Santurbán", "dominant_threat": "Mining"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-73.02, 7.65],
+          [-72.82, 7.65],
+          [-72.72, 7.30],
+          [-72.92, 6.95],
+          [-73.32, 6.95],
+          [-73.42, 7.30],
+          [-73.02, 7.65]
+        ]]
+      },
+      "properties": {"urgency_score": 4.9, "urgency_class": "Very High", "endemic_richness_score": 5, "agriculture_pressure": 3, "fire_pressure": 5, "urban_pressure": 2, "mining_pressure": 5, "paramo_name": "Santurbán", "dominant_threat": "Mining"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-72.22, 7.65],
+          [-72.02, 7.65],
+          [-71.92, 7.30],
+          [-72.12, 6.95],
+          [-72.52, 6.95],
+          [-72.62, 7.30],
+          [-72.22, 7.65]
+        ]]
+      },
+      "properties": {"urgency_score": 4.3, "urgency_class": "High", "endemic_richness_score": 4, "agriculture_pressure": 5, "fire_pressure": 4, "urban_pressure": 2, "mining_pressure": 3, "paramo_name": "Santurbán", "dominant_threat": "Agriculture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-75.55, 5.05],
+          [-75.35, 5.05],
+          [-75.25, 4.70],
+          [-75.45, 4.35],
+          [-75.85, 4.35],
+          [-75.95, 4.70],
+          [-75.55, 5.05]
+        ]]
+      },
+      "properties": {"urgency_score": 3.2, "urgency_class": "Moderate", "endemic_richness_score": 4, "agriculture_pressure": 3, "fire_pressure": 3, "urban_pressure": 2, "mining_pressure": 2, "paramo_name": "Los Nevados", "dominant_threat": "Climate"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-75.15, 5.05],
+          [-74.95, 5.05],
+          [-74.85, 4.70],
+          [-75.05, 4.35],
+          [-75.45, 4.35],
+          [-75.55, 4.70],
+          [-75.15, 5.05]
+        ]]
+      },
+      "properties": {"urgency_score": 3.6, "urgency_class": "Moderate", "endemic_richness_score": 4, "agriculture_pressure": 4, "fire_pressure": 3, "urban_pressure": 2, "mining_pressure": 2, "paramo_name": "Los Nevados", "dominant_threat": "Agriculture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-75.55, 5.45],
+          [-75.35, 5.45],
+          [-75.25, 5.10],
+          [-75.45, 4.75],
+          [-75.85, 4.75],
+          [-75.95, 5.10],
+          [-75.55, 5.45]
+        ]]
+      },
+      "properties": {"urgency_score": 2.8, "urgency_class": "Low", "endemic_richness_score": 3, "agriculture_pressure": 3, "fire_pressure": 2, "urban_pressure": 2, "mining_pressure": 1, "paramo_name": "Los Nevados", "dominant_threat": "Agriculture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-74.05, 11.02],
+          [-73.85, 11.02],
+          [-73.75, 10.67],
+          [-73.95, 10.32],
+          [-74.35, 10.32],
+          [-74.45, 10.67],
+          [-74.05, 11.02]
+        ]]
+      },
+      "properties": {"urgency_score": 4.1, "urgency_class": "High", "endemic_richness_score": 5, "agriculture_pressure": 4, "fire_pressure": 3, "urban_pressure": 3, "mining_pressure": 2, "paramo_name": "Sierra Nevada", "dominant_threat": "Agriculture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-73.65, 11.02],
+          [-73.45, 11.02],
+          [-73.35, 10.67],
+          [-73.55, 10.32],
+          [-73.95, 10.32],
+          [-74.05, 10.67],
+          [-73.65, 11.02]
+        ]]
+      },
+      "properties": {"urgency_score": 3.7, "urgency_class": "Moderate", "endemic_richness_score": 5, "agriculture_pressure": 3, "fire_pressure": 4, "urban_pressure": 2, "mining_pressure": 1, "paramo_name": "Sierra Nevada", "dominant_threat": "Fire"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-74.45, 11.02],
+          [-74.25, 11.02],
+          [-74.15, 10.67],
+          [-74.35, 10.32],
+          [-74.75, 10.32],
+          [-74.85, 10.67],
+          [-74.45, 11.02]
+        ]]
+      },
+      "properties": {"urgency_score": 2.4, "urgency_class": "Low", "endemic_richness_score": 3, "agriculture_pressure": 2, "fire_pressure": 3, "urban_pressure": 2, "mining_pressure": 1, "paramo_name": "Sierra Nevada", "dominant_threat": "Fire"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-73.75, 5.75],
+          [-73.55, 5.75],
+          [-73.45, 5.40],
+          [-73.65, 5.05],
+          [-74.05, 5.05],
+          [-74.15, 5.40],
+          [-73.75, 5.75]
+        ]]
+      },
+      "properties": {"urgency_score": 4.6, "urgency_class": "High", "endemic_richness_score": 3, "agriculture_pressure": 4, "fire_pressure": 5, "urban_pressure": 2, "mining_pressure": 5, "paramo_name": "Rabanal", "dominant_threat": "Mining"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-73.35, 5.75],
+          [-73.15, 5.75],
+          [-73.05, 5.40],
+          [-73.25, 5.05],
+          [-73.65, 5.05],
+          [-73.75, 5.40],
+          [-73.35, 5.75]
+        ]]
+      },
+      "properties": {"urgency_score": 4.4, "urgency_class": "High", "endemic_richness_score": 3, "agriculture_pressure": 5, "fire_pressure": 4, "urban_pressure": 2, "mining_pressure": 4, "paramo_name": "Rabanal", "dominant_threat": "Agriculture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-76.35, 7.15],
+          [-76.15, 7.15],
+          [-76.05, 6.80],
+          [-76.25, 6.45],
+          [-76.65, 6.45],
+          [-76.75, 6.80],
+          [-76.35, 7.15]
+        ]]
+      },
+      "properties": {"urgency_score": 3.1, "urgency_class": "Moderate", "endemic_richness_score": 4, "agriculture_pressure": 3, "fire_pressure": 3, "urban_pressure": 2, "mining_pressure": 2, "paramo_name": "Frontino-Urrao", "dominant_threat": "Agriculture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-75.95, 7.15],
+          [-75.75, 7.15],
+          [-75.65, 6.80],
+          [-75.85, 6.45],
+          [-76.25, 6.45],
+          [-76.35, 6.80],
+          [-75.95, 7.15]
+        ]]
+      },
+      "properties": {"urgency_score": 2.6, "urgency_class": "Low", "endemic_richness_score": 3, "agriculture_pressure": 3, "fire_pressure": 2, "urban_pressure": 1, "mining_pressure": 2, "paramo_name": "Frontino-Urrao", "dominant_threat": "Agriculture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-76.35, 3.08],
+          [-76.15, 3.08],
+          [-76.05, 2.73],
+          [-76.25, 2.38],
+          [-76.65, 2.38],
+          [-76.75, 2.73],
+          [-76.35, 3.08]
+        ]]
+      },
+      "properties": {"urgency_score": 3.3, "urgency_class": "Moderate", "endemic_richness_score": 4, "agriculture_pressure": 3, "fire_pressure": 3, "urban_pressure": 2, "mining_pressure": 3, "paramo_name": "Nevado del Huila", "dominant_threat": "Climate"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-75.95, 3.08],
+          [-75.75, 3.08],
+          [-75.65, 2.73],
+          [-75.85, 2.38],
+          [-76.25, 2.38],
+          [-76.35, 2.73],
+          [-75.95, 3.08]
+        ]]
+      },
+      "properties": {"urgency_score": 2.9, "urgency_class": "Low", "endemic_richness_score": 3, "agriculture_pressure": 3, "fire_pressure": 3, "urban_pressure": 2, "mining_pressure": 2, "paramo_name": "Nevado del Huila", "dominant_threat": "Agriculture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-76.35, 5.35],
+          [-76.15, 5.35],
+          [-76.05, 5.00],
+          [-76.25, 4.65],
+          [-76.65, 4.65],
+          [-76.75, 5.00],
+          [-76.35, 5.35]
+        ]]
+      },
+      "properties": {"urgency_score": 2.2, "urgency_class": "Low", "endemic_richness_score": 3, "agriculture_pressure": 2, "fire_pressure": 2, "urban_pressure": 1, "mining_pressure": 2, "paramo_name": "Tatamá", "dominant_threat": "Agriculture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-75.95, 5.35],
+          [-75.75, 5.35],
+          [-75.65, 5.00],
+          [-75.85, 4.65],
+          [-76.25, 4.65],
+          [-76.35, 5.00],
+          [-75.95, 5.35]
+        ]]
+      },
+      "properties": {"urgency_score": 1.8, "urgency_class": "Very Low", "endemic_richness_score": 2, "agriculture_pressure": 2, "fire_pressure": 1, "urban_pressure": 1, "mining_pressure": 1, "paramo_name": "Tatamá", "dominant_threat": "Agriculture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-75.87, 6.81],
+          [-75.67, 6.81],
+          [-75.57, 6.46],
+          [-75.77, 6.11],
+          [-76.17, 6.11],
+          [-76.27, 6.46],
+          [-75.87, 6.81]
+        ]]
+      },
+      "properties": {"urgency_score": 3.4, "urgency_class": "Moderate", "endemic_richness_score": 3, "agriculture_pressure": 4, "fire_pressure": 3, "urban_pressure": 2, "mining_pressure": 2, "paramo_name": "Belmira", "dominant_threat": "Agriculture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-75.47, 6.81],
+          [-75.27, 6.81],
+          [-75.17, 6.46],
+          [-75.37, 6.11],
+          [-75.77, 6.11],
+          [-75.87, 6.46],
+          [-75.47, 6.81]
+        ]]
+      },
+      "properties": {"urgency_score": 2.7, "urgency_class": "Low", "endemic_richness_score": 2, "agriculture_pressure": 3, "fire_pressure": 2, "urban_pressure": 2, "mining_pressure": 2, "paramo_name": "Belmira", "dominant_threat": "Pasture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-72.65, 6.15],
+          [-72.45, 6.15],
+          [-72.35, 5.80],
+          [-72.55, 5.45],
+          [-72.95, 5.45],
+          [-73.05, 5.80],
+          [-72.65, 6.15]
+        ]]
+      },
+      "properties": {"urgency_score": 2.3, "urgency_class": "Low", "endemic_richness_score": 3, "agriculture_pressure": 2, "fire_pressure": 2, "urban_pressure": 1, "mining_pressure": 2, "paramo_name": "Pisba", "dominant_threat": "Agriculture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-72.25, 6.15],
+          [-72.05, 6.15],
+          [-71.95, 5.80],
+          [-72.15, 5.45],
+          [-72.55, 5.45],
+          [-72.65, 5.80],
+          [-72.25, 6.15]
+        ]]
+      },
+      "properties": {"urgency_score": 1.9, "urgency_class": "Very Low", "endemic_richness_score": 2, "agriculture_pressure": 2, "fire_pressure": 2, "urban_pressure": 1, "mining_pressure": 1, "paramo_name": "Pisba", "dominant_threat": "Agriculture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-74.55, 4.05],
+          [-74.35, 4.05],
+          [-74.25, 3.70],
+          [-74.45, 3.35],
+          [-74.85, 3.35],
+          [-74.95, 3.70],
+          [-74.55, 4.05]
+        ]]
+      },
+      "properties": {"urgency_score": 4.7, "urgency_class": "High", "endemic_richness_score": 5, "agriculture_pressure": 5, "fire_pressure": 4, "urban_pressure": 3, "mining_pressure": 2, "paramo_name": "Sumapaz", "dominant_threat": "Agriculture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-73.15, 7.65],
+          [-72.95, 7.65],
+          [-72.85, 7.30],
+          [-73.05, 6.95],
+          [-73.45, 6.95],
+          [-73.55, 7.30],
+          [-73.15, 7.65]
+        ]]
+      },
+      "properties": {"urgency_score": 3.0, "urgency_class": "Moderate", "endemic_richness_score": 3, "agriculture_pressure": 3, "fire_pressure": 3, "urban_pressure": 3, "mining_pressure": 2, "paramo_name": "Santurbán", "dominant_threat": "Urban expansion"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-74.15, 4.15],
+          [-73.95, 4.15],
+          [-73.85, 3.80],
+          [-74.05, 3.45],
+          [-74.45, 3.45],
+          [-74.55, 3.80],
+          [-74.15, 4.15]
+        ]]
+      },
+      "properties": {"urgency_score": 4.1, "urgency_class": "High", "endemic_richness_score": 5, "agriculture_pressure": 4, "fire_pressure": 4, "urban_pressure": 3, "mining_pressure": 2, "paramo_name": "Sumapaz", "dominant_threat": "Fire"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-75.15, 4.65],
+          [-74.95, 4.65],
+          [-74.85, 4.30],
+          [-75.05, 3.95],
+          [-75.45, 3.95],
+          [-75.55, 4.30],
+          [-75.15, 4.65]
+        ]]
+      },
+      "properties": {"urgency_score": 3.7, "urgency_class": "Moderate", "endemic_richness_score": 4, "agriculture_pressure": 4, "fire_pressure": 3, "urban_pressure": 3, "mining_pressure": 2, "paramo_name": "Los Nevados", "dominant_threat": "Agriculture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-73.35, 4.80],
+          [-73.15, 4.80],
+          [-73.05, 4.45],
+          [-73.25, 4.10],
+          [-73.65, 4.10],
+          [-73.75, 4.45],
+          [-73.35, 4.80]
+        ]]
+      },
+      "properties": {"urgency_score": 2.5, "urgency_class": "Low", "endemic_richness_score": 2, "agriculture_pressure": 3, "fire_pressure": 2, "urban_pressure": 2, "mining_pressure": 1, "paramo_name": "Chingaza", "dominant_threat": "Agriculture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-76.75, 3.08],
+          [-76.55, 3.08],
+          [-76.45, 2.73],
+          [-76.65, 2.38],
+          [-77.05, 2.38],
+          [-77.15, 2.73],
+          [-76.75, 3.08]
+        ]]
+      },
+      "properties": {"urgency_score": 3.5, "urgency_class": "Moderate", "endemic_richness_score": 4, "agriculture_pressure": 4, "fire_pressure": 3, "urban_pressure": 2, "mining_pressure": 2, "paramo_name": "Nevado del Huila", "dominant_threat": "Agriculture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-77.37, 1.42],
+          [-77.17, 1.42],
+          [-77.07, 1.07],
+          [-77.27, 0.72],
+          [-77.67, 0.72],
+          [-77.77, 1.07],
+          [-77.37, 1.42]
+        ]]
+      },
+      "properties": {"urgency_score": 4.2, "urgency_class": "High", "endemic_richness_score": 4, "agriculture_pressure": 5, "fire_pressure": 3, "urban_pressure": 2, "mining_pressure": 3, "paramo_name": "Nariño páramo", "dominant_threat": "Agriculture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-76.97, 1.42],
+          [-76.77, 1.42],
+          [-76.67, 1.07],
+          [-76.87, 0.72],
+          [-77.27, 0.72],
+          [-77.37, 1.07],
+          [-76.97, 1.42]
+        ]]
+      },
+      "properties": {"urgency_score": 3.8, "urgency_class": "Moderate", "endemic_richness_score": 3, "agriculture_pressure": 4, "fire_pressure": 3, "urban_pressure": 2, "mining_pressure": 3, "paramo_name": "Nariño páramo", "dominant_threat": "Agriculture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-74.35, 3.65],
+          [-74.15, 3.65],
+          [-74.05, 3.30],
+          [-74.25, 2.95],
+          [-74.65, 2.95],
+          [-74.75, 3.30],
+          [-74.35, 3.65]
+        ]]
+      },
+      "properties": {"urgency_score": 1.5, "urgency_class": "Very Low", "endemic_richness_score": 1, "agriculture_pressure": 2, "fire_pressure": 1, "urban_pressure": 1, "mining_pressure": 1, "paramo_name": "Sumapaz", "dominant_threat": "Agriculture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-75.15, 5.45],
+          [-74.95, 5.45],
+          [-74.85, 5.10],
+          [-75.05, 4.75],
+          [-75.45, 4.75],
+          [-75.55, 5.10],
+          [-75.15, 5.45]
+        ]]
+      },
+      "properties": {"urgency_score": 3.0, "urgency_class": "Moderate", "endemic_richness_score": 3, "agriculture_pressure": 3, "fire_pressure": 3, "urban_pressure": 2, "mining_pressure": 2, "paramo_name": "Los Nevados", "dominant_threat": "Climate"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-73.95, 11.42],
+          [-73.75, 11.42],
+          [-73.65, 11.07],
+          [-73.85, 10.72],
+          [-74.25, 10.72],
+          [-74.35, 11.07],
+          [-73.95, 11.42]
+        ]]
+      },
+      "properties": {"urgency_score": 4.5, "urgency_class": "High", "endemic_richness_score": 5, "agriculture_pressure": 4, "fire_pressure": 4, "urban_pressure": 3, "mining_pressure": 2, "paramo_name": "Sierra Nevada", "dominant_threat": "Agriculture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-72.25, 7.65],
+          [-72.05, 7.65],
+          [-71.95, 7.30],
+          [-72.15, 6.95],
+          [-72.55, 6.95],
+          [-72.65, 7.30],
+          [-72.25, 7.65]
+        ]]
+      },
+      "properties": {"urgency_score": 4.8, "urgency_class": "Very High", "endemic_richness_score": 4, "agriculture_pressure": 3, "fire_pressure": 4, "urban_pressure": 2, "mining_pressure": 5, "paramo_name": "Santurbán", "dominant_threat": "Mining"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-73.55, 5.35],
+          [-73.35, 5.35],
+          [-73.25, 5.00],
+          [-73.45, 4.65],
+          [-73.85, 4.65],
+          [-73.95, 5.00],
+          [-73.55, 5.35]
+        ]]
+      },
+      "properties": {"urgency_score": 3.6, "urgency_class": "Moderate", "endemic_richness_score": 3, "agriculture_pressure": 4, "fire_pressure": 3, "urban_pressure": 3, "mining_pressure": 2, "paramo_name": "Rabanal", "dominant_threat": "Agriculture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-75.95, 6.41],
+          [-75.75, 6.41],
+          [-75.65, 6.06],
+          [-75.85, 5.71],
+          [-76.25, 5.71],
+          [-76.35, 6.06],
+          [-75.95, 6.41]
+        ]]
+      },
+      "properties": {"urgency_score": 2.1, "urgency_class": "Low", "endemic_richness_score": 2, "agriculture_pressure": 2, "fire_pressure": 2, "urban_pressure": 2, "mining_pressure": 1, "paramo_name": "Belmira", "dominant_threat": "Urban expansion"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-72.85, 6.15],
+          [-72.65, 6.15],
+          [-72.55, 5.80],
+          [-72.75, 5.45],
+          [-73.15, 5.45],
+          [-73.25, 5.80],
+          [-72.85, 6.15]
+        ]]
+      },
+      "properties": {"urgency_score": 3.2, "urgency_class": "Moderate", "endemic_richness_score": 3, "agriculture_pressure": 4, "fire_pressure": 2, "urban_pressure": 2, "mining_pressure": 2, "paramo_name": "Pisba", "dominant_threat": "Agriculture"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-75.55, 4.65],
+          [-75.35, 4.65],
+          [-75.25, 4.30],
+          [-75.45, 3.95],
+          [-75.85, 3.95],
+          [-75.95, 4.30],
+          [-75.55, 4.65]
+        ]]
+      },
+      "properties": {"urgency_score": 2.0, "urgency_class": "Low", "endemic_richness_score": 2, "agriculture_pressure": 2, "fire_pressure": 2, "urban_pressure": 2, "mining_pressure": 1, "paramo_name": "Los Nevados", "dominant_threat": "Climate"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-74.15, 5.15],
+          [-73.95, 5.15],
+          [-73.85, 4.80],
+          [-74.05, 4.45],
+          [-74.45, 4.45],
+          [-74.55, 4.80],
+          [-74.15, 5.15]
+        ]]
+      },
+      "properties": {"urgency_score": 3.3, "urgency_class": "Moderate", "endemic_richness_score": 3, "agriculture_pressure": 4, "fire_pressure": 3, "urban_pressure": 2, "mining_pressure": 1, "paramo_name": "Sumapaz", "dominant_threat": "Agriculture"}
+    }
+  ]
+}

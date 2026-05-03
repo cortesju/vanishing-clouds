@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vanishing Clouds — Colombia's Hidden Páramo Crisis</title>
+
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <!-- MapLibre GL CSS (required by esri-leaflet-vector) -->
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Leaflet.heat -->
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+  <!-- MapLibre GL JS (required by esri-leaflet-vector) -->
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+
+  <!-- Esri Leaflet -->
+  <script src="https://unpkg.com/esri-leaflet@3/dist/esri-leaflet.js"></script>
+
+  <!-- Site Styles -->
+  <link rel="stylesheet" href="styles/main.css" />
+</head>
+<body>
+
+<div id="app">
+
+  <!-- =====================================================
+       FULL-SCREEN MAP (always behind everything)
+  ===================================================== -->
+  <div id="map-main"></div>
+
+  <!-- =====================================================
+       TOP NAVIGATION BAR
+  ===================================================== -->
+  <nav id="top-nav">
+    <div class="tn-left">
+      <button id="panel-toggle-btn" class="tn-panel-toggle" title="Toggle panel" aria-label="Toggle side panel">
+        <svg width="18" height="14" viewBox="0 0 18 14" fill="none">
+          <rect y="0" width="18" height="2" rx="1" fill="currentColor"/>
+          <rect y="6" width="18" height="2" rx="1" fill="currentColor"/>
+          <rect y="12" width="18" height="2" rx="1" fill="currentColor"/>
+        </svg>
+      </button>
+      <div class="tn-logo">
+        <img src="Frailejon.png" class="logo-leaf" alt="Frailejon" />
+        <div class="logo-text">
+          <span class="logo-title">Vanishing Clouds</span>
+          <span class="logo-sub">Colombia's Páramo Crisis</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tn-center" id="tn-center">
+      <button class="tn-item active" data-panel="overview">
+        <svg class="tn-icon" viewBox="0 0 16 16" fill="none"><path d="M8 1L1 14h14L8 1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        Páramos
+      </button>
+      <button class="tn-item" data-panel="species">
+        <svg class="tn-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><path d="M8 4v4l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Species
+      </button>
+      <button class="tn-item" data-panel="timeline">
+        <svg class="tn-icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="4" width="14" height="8" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 4V2.5M11 4V2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Through Time
+      </button>
+      <button class="tn-item" data-panel="threats">
+        <svg class="tn-icon" viewBox="0 0 16 16" fill="none"><path d="M8 2L1.5 13.5h13L8 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 6.5v3M8 11v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Threats
+      </button>
+      <button class="tn-item" data-panel="urgency">
+        <svg class="tn-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="11" r=".75" fill="currentColor"/></svg>
+        Urgency
+      </button>
+      <button class="tn-item" data-panel="about">
+        <svg class="tn-icon" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h8M2 12h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        About
+      </button>
+    </div>
+
+    <div class="tn-right">
+      <button id="map-layers-btn" class="tn-layers-btn">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.5L1 5l7 3.5L15 5 8 1.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M1 9l7 3.5L15 9" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        Map Layers
+        <svg class="chevron" width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="tn-hamburger" id="tn-hamburger">☰</button>
+    </div>
+  </nav>
+
+  <!-- =====================================================
+       LEFT SIDE PANEL
+  ===================================================== -->
+  <aside id="side-panel">
+    <div id="panel-scroll">
+      <!-- Content injected by main.js -->
+      <div class="panel-loading">
+        <div class="panel-spinner"></div>
+        <p>Loading…</p>
+      </div>
+    </div>
+    <!-- Collapse / expand tab -->
+    <button id="panel-collapse-tab" title="Collapse panel" aria-label="Collapse side panel">
+      <svg class="collapse-arrow" width="8" height="14" viewBox="0 0 8 14" fill="none">
+        <path d="M6 1L1 7l5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </aside>
+
+  <!-- =====================================================
+       MAP LAYERS DROPDOWN (floating, top-right)
+       To add a data layer:    add a .layer-row div here + case in maps.js setLayerOpacity
+       To add a basemap layer: add a .layer-row div in #basemap-layers-list + case in maps.js setBasemapVisible / setBasemapOpacity
+  ===================================================== -->
+  <div id="layers-dropdown" class="hidden" role="dialog" aria-label="Map Layers">
+    <h4 class="layers-title">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1.5L1 5l7 3.5L15 5 8 1.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M1 9l7 3.5L15 9" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+      Map Layers
+    </h4>
+
+    <!-- Data layers — draggable, reorder by grabbing the ⠿ handle -->
+    <div class="layers-list" id="data-layers-list">
+
+      <div class="layer-row" draggable="true" data-layer-key="paramoFill">
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
+        <input type="checkbox" id="gl-paramo" checked>
+        <label for="gl-paramo" class="layer-row-label">
+          <span class="layer-swatch" style="background:rgba(212,174,56,0.5);border:2px solid #A88018"></span>
+          <span>Páramo boundaries</span>
+        </label>
+        <input type="range" class="layer-opacity-slider" min="0" max="100" value="100" title="Opacity">
+      </div>
+
+      <div class="layer-row" draggable="true" data-layer-key="speciesPoints">
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
+        <input type="checkbox" id="gl-species">
+        <label for="gl-species" class="layer-row-label">
+          <span class="layer-swatch" style="background:#2874A6"></span>
+          <span>Species occurrences</span>
+        </label>
+        <input type="range" class="layer-opacity-slider" min="0" max="100" value="100" title="Opacity">
+      </div>
+
+      <div class="layer-row" draggable="true" data-layer-key="elevationZones">
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
+        <input type="checkbox" id="gl-elevation">
+        <label for="gl-elevation" class="layer-row-label">
+          <span class="layer-swatch" style="background:linear-gradient(to right,#D0D0D0,#1B5E3B)"></span>
+          <span>Elevation zones</span>
+        </label>
+        <input type="range" class="layer-opacity-slider" min="0" max="100" value="100" title="Opacity">
+      </div>
+
+      <div class="layer-row" draggable="true" data-layer-key="agriculture">
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
+        <input type="checkbox" id="gl-agriculture">
+        <label for="gl-agriculture" class="layer-row-label">
+          <span class="layer-swatch" style="background:#F9A825"></span>
+          <span>Agriculture pressure</span>
+        </label>
+        <input type="range" class="layer-opacity-slider" min="0" max="100" value="100" title="Opacity">
+      </div>
+
+      <div class="layer-row" draggable="true" data-layer-key="fire">
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
+        <input type="checkbox" id="gl-fire">
+        <label for="gl-fire" class="layer-row-label">
+          <span class="layer-swatch" style="background:#C0392B"></span>
+          <span>Fire alerts</span>
+        </label>
+        <input type="range" class="layer-opacity-slider" min="0" max="100" value="100" title="Opacity">
+      </div>
+
+      <div class="layer-row" draggable="true" data-layer-key="urgencyHexagons">
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
+        <input type="checkbox" id="gl-urgency">
+        <label for="gl-urgency" class="layer-row-label">
+          <span class="layer-swatch" style="background:linear-gradient(to right,#C7E9B4,#C0392B)"></span>
+          <span>Urgency index</span>
+        </label>
+        <input type="range" class="layer-opacity-slider" min="0" max="100" value="100" title="Opacity">
+      </div>
+
+    </div>
+
+    <!-- Basemap section — fixed order (terrain → hillshade → labels), not draggable -->
+    <div class="layers-divider">Basemap</div>
+    <div class="layers-list" id="basemap-layers-list">
+
+      <div class="layer-row" data-basemap-key="terrain">
+        <input type="checkbox" id="gl-basemap-terrain" checked>
+        <label for="gl-basemap-terrain" class="layer-row-label">
+          <span class="layer-swatch" style="background:linear-gradient(135deg,#7a6245,#4a7c59)"></span>
+          <span>Terrain tiles</span>
+        </label>
+        <input type="range" class="layer-opacity-slider" min="0" max="100" value="100" title="Opacity">
+      </div>
+
+      <div class="layer-row" data-basemap-key="hillshade">
+        <input type="checkbox" id="gl-basemap-hillshade" checked>
+        <label for="gl-basemap-hillshade" class="layer-row-label">
+          <span class="layer-swatch" style="background:linear-gradient(135deg,#555,#ddd)"></span>
+          <span>Hillshade</span>
+        </label>
+        <input type="range" class="layer-opacity-slider" min="0" max="100" value="75" title="Opacity">
+      </div>
+
+      <div class="layer-row" data-basemap-key="vectortiles">
+        <input type="checkbox" id="gl-basemap-vector" checked>
+        <label for="gl-basemap-vector" class="layer-row-label">
+          <span class="layer-swatch" style="background:linear-gradient(135deg,#1a2a3a,#3a7bd5)"></span>
+          <span>Labels &amp; roads</span>
+        </label>
+        <input type="range" class="layer-opacity-slider" min="0" max="100" value="100" title="Opacity">
+      </div>
+
+      <div class="layer-row" data-basemap-key="detail">
+        <input type="checkbox" id="gl-basemap-detail" checked>
+        <label for="gl-basemap-detail" class="layer-row-label">
+          <span class="layer-swatch" style="background:linear-gradient(135deg,#1a6e9a,#4caf6e)"></span>
+          <span>Water &amp; urban detail <span class="layer-zoom-badge">zoom 8+</span></span>
+        </label>
+        <input type="range" class="layer-opacity-slider" min="0" max="100" value="100" title="Opacity">
+      </div>
+
+    </div>
+  </div>
+
+  <!-- =====================================================
+       BOTTOM DATA STRIP
+  ===================================================== -->
+  <div id="data-strip">
+    <span class="data-strip-dot green"></span>
+    <span>37 páramo complexes</span>
+    <span class="data-strip-sep">·</span>
+    <span class="data-strip-dot blue"></span>
+    <span>201 species records</span>
+    <span class="data-strip-sep">·</span>
+    <span class="data-strip-dot orange"></span>
+    <span>40 fire alerts</span>
+    <span class="data-strip-sep">·</span>
+    <span class="data-strip-dot red"></span>
+    <span>45 urgency zones</span>
+    <span class="data-strip-sep data-strip-credits">·</span>
+    <span class="data-strip-credits">Data: GBIF · IAvH · NASA FIRMS · MapBiomas</span>
+  </div>
+
+  <!-- =====================================================
+       SPECIES MODAL (over everything)
+  ===================================================== -->
+  <div id="species-modal" class="modal-overlay">
+    <div class="modal-content">
+      <button class="modal-close" id="modal-close">×</button>
+      <div id="modal-body"></div>
+      <div id="modal-mini-map" class="mini-map"></div>
+    </div>
+  </div>
+
+
+</div><!-- #app -->
+
+<!-- Scripts -->
+<script src="js/main.js" defer></script>
+<script src="js/maps.js" defer></script>
+<script src="js/species.js" defer></script>
+<script src="js/charts.js" defer></script>
+<script src="js/timeslider.js" defer></script>
+
+</body>
+</html>

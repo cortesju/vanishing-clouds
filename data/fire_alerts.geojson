@@ -1,0 +1,205 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-74.42, 4.02]},
+      "properties": {"year": 2020, "month": 1, "confidence": "high", "fire_radiative_power": 342.5, "paramo_name": "Sumapaz"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-74.28, 4.18]},
+      "properties": {"year": 2020, "month": 2, "confidence": "high", "fire_radiative_power": 287.3, "paramo_name": "Sumapaz"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-74.52, 3.95]},
+      "properties": {"year": 2019, "month": 1, "confidence": "nominal", "fire_radiative_power": 145.8, "paramo_name": "Sumapaz"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-74.18, 4.32]},
+      "properties": {"year": 2021, "month": 3, "confidence": "high", "fire_radiative_power": 412.0, "paramo_name": "Sumapaz"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-74.35, 4.08]},
+      "properties": {"year": 2023, "month": 2, "confidence": "high", "fire_radiative_power": 198.6, "paramo_name": "Sumapaz"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-73.82, 4.52]},
+      "properties": {"year": 2020, "month": 1, "confidence": "high", "fire_radiative_power": 325.1, "paramo_name": "Chingaza"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-73.68, 4.62]},
+      "properties": {"year": 2022, "month": 2, "confidence": "nominal", "fire_radiative_power": 88.4, "paramo_name": "Chingaza"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-73.72, 4.45]},
+      "properties": {"year": 2019, "month": 3, "confidence": "low", "fire_radiative_power": 42.7, "paramo_name": "Chingaza"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-73.58, 4.68]},
+      "properties": {"year": 2021, "month": 1, "confidence": "high", "fire_radiative_power": 267.9, "paramo_name": "Chingaza"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-72.88, 7.38]},
+      "properties": {"year": 2020, "month": 2, "confidence": "high", "fire_radiative_power": 489.2, "paramo_name": "Santurbán"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-72.75, 7.52]},
+      "properties": {"year": 2021, "month": 1, "confidence": "high", "fire_radiative_power": 378.4, "paramo_name": "Santurbán"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-72.95, 7.45]},
+      "properties": {"year": 2022, "month": 3, "confidence": "nominal", "fire_radiative_power": 156.2, "paramo_name": "Santurbán"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-72.65, 7.62]},
+      "properties": {"year": 2023, "month": 2, "confidence": "high", "fire_radiative_power": 312.7, "paramo_name": "Santurbán"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-73.02, 7.35]},
+      "properties": {"year": 2024, "month": 1, "confidence": "high", "fire_radiative_power": 425.8, "paramo_name": "Santurbán"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-75.45, 4.88]},
+      "properties": {"year": 2019, "month": 2, "confidence": "nominal", "fire_radiative_power": 78.5, "paramo_name": "Los Nevados"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-75.28, 5.02]},
+      "properties": {"year": 2020, "month": 1, "confidence": "high", "fire_radiative_power": 234.1, "paramo_name": "Los Nevados"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-75.62, 4.72]},
+      "properties": {"year": 2021, "month": 3, "confidence": "low", "fire_radiative_power": 35.6, "paramo_name": "Los Nevados"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-75.38, 4.95]},
+      "properties": {"year": 2022, "month": 2, "confidence": "high", "fire_radiative_power": 291.4, "paramo_name": "Los Nevados"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-73.92, 10.82]},
+      "properties": {"year": 2020, "month": 4, "confidence": "high", "fire_radiative_power": 187.3, "paramo_name": "Sierra Nevada"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-73.78, 10.95]},
+      "properties": {"year": 2021, "month": 3, "confidence": "nominal", "fire_radiative_power": 112.5, "paramo_name": "Sierra Nevada"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-74.02, 10.78]},
+      "properties": {"year": 2022, "month": 4, "confidence": "high", "fire_radiative_power": 356.8, "paramo_name": "Sierra Nevada"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-73.65, 11.05]},
+      "properties": {"year": 2023, "month": 3, "confidence": "high", "fire_radiative_power": 278.2, "paramo_name": "Sierra Nevada"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-74.08, 4.42]},
+      "properties": {"year": 2020, "month": 1, "confidence": "nominal", "fire_radiative_power": 95.3, "paramo_name": "Sumapaz"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-76.12, 2.88]},
+      "properties": {"year": 2021, "month": 2, "confidence": "high", "fire_radiative_power": 445.6, "paramo_name": "Nevado del Huila"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-76.02, 3.05]},
+      "properties": {"year": 2022, "month": 1, "confidence": "high", "fire_radiative_power": 322.9, "paramo_name": "Nevado del Huila"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-75.88, 2.95]},
+      "properties": {"year": 2023, "month": 2, "confidence": "nominal", "fire_radiative_power": 168.4, "paramo_name": "Nevado del Huila"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-76.22, 7.02]},
+      "properties": {"year": 2019, "month": 3, "confidence": "high", "fire_radiative_power": 215.7, "paramo_name": "Frontino-Urrao"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-76.08, 7.15]},
+      "properties": {"year": 2022, "month": 2, "confidence": "nominal", "fire_radiative_power": 134.2, "paramo_name": "Frontino-Urrao"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-76.15, 5.12]},
+      "properties": {"year": 2020, "month": 3, "confidence": "high", "fire_radiative_power": 289.5, "paramo_name": "Tatamá"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-76.05, 5.28]},
+      "properties": {"year": 2023, "month": 2, "confidence": "low", "fire_radiative_power": 52.8, "paramo_name": "Tatamá"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-73.38, 5.72]},
+      "properties": {"year": 2021, "month": 1, "confidence": "nominal", "fire_radiative_power": 127.6, "paramo_name": "Rabanal"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-73.52, 5.55]},
+      "properties": {"year": 2024, "month": 2, "confidence": "high", "fire_radiative_power": 365.1, "paramo_name": "Rabanal"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-77.28, 1.18]},
+      "properties": {"year": 2019, "month": 8, "confidence": "high", "fire_radiative_power": 198.4, "paramo_name": "Nariño páramo"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-77.42, 1.25]},
+      "properties": {"year": 2021, "month": 7, "confidence": "nominal", "fire_radiative_power": 143.7, "paramo_name": "Nariño páramo"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-75.72, 6.62]},
+      "properties": {"year": 2022, "month": 3, "confidence": "high", "fire_radiative_power": 256.8, "paramo_name": "Belmira"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-75.58, 6.72]},
+      "properties": {"year": 2023, "month": 2, "confidence": "nominal", "fire_radiative_power": 88.9, "paramo_name": "Belmira"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-72.38, 6.02]},
+      "properties": {"year": 2020, "month": 1, "confidence": "high", "fire_radiative_power": 174.3, "paramo_name": "Pisba"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-72.55, 5.92]},
+      "properties": {"year": 2022, "month": 2, "confidence": "nominal", "fire_radiative_power": 98.6, "paramo_name": "Pisba"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-74.58, 4.38]},
+      "properties": {"year": 2024, "month": 1, "confidence": "high", "fire_radiative_power": 387.2, "paramo_name": "Sumapaz"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-73.48, 4.55]},
+      "properties": {"year": 2023, "month": 3, "confidence": "high", "fire_radiative_power": 445.0, "paramo_name": "Chingaza"}
+    }
+  ]
+}
