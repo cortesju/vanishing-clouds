@@ -69,13 +69,17 @@ const PANEL_TEMPLATES = {
       <div class="species-map-section">
         <span class="species-section-label">MAP THEME</span>
         <div class="species-theme-selector">
-          <button class="theme-btn active" data-theme="richness">Species Richness</button>
+          <button class="theme-btn"        data-theme="richness">Species Richness</button>
           <button class="theme-btn"        data-theme="count">Record Count</button>
           <button class="theme-btn"        data-theme="decade">Decade</button>
-          <button class="theme-btn"        data-theme="points">Species Points</button>
+          <button class="theme-btn active" data-theme="points">Species Points</button>
         </div>
+
+        <!-- Small description of the active hex theme — hidden for points -->
+        <p id="theme-description" class="theme-description hidden"></p>
+
         <!-- Sub-filter shown only when Species Points theme is active -->
-        <div id="species-points-filter" class="species-points-filter hidden">
+        <div id="species-points-filter" class="species-points-filter">
           <span class="species-section-label" style="margin-bottom:0.4rem">FILTER BY</span>
           <div class="points-filter-btns">
             <button class="pts-btn active" data-kingdom="">All</button>
@@ -106,7 +110,17 @@ const PANEL_TEMPLATES = {
             </div>
             <button id="ts-play-btn" class="ts-play-btn">▶ Play</button>
           </div>
+
+          <!-- ── Species legend / quick-list ───────────────── -->
+          <div class="species-legend-section">
+            <button class="species-legend-toggle" id="sp-legend-toggle">
+              <span>📋 Species in this dataset</span>
+              <span class="sp-legend-arrow">›</span>
+            </button>
+            <div id="gbif-species-list" class="gbif-species-list hidden"></div>
+          </div>
         </div>
+
         <div id="species-hex-legend" class="species-hex-legend"></div>
       </div>
 

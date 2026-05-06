@@ -200,7 +200,7 @@ const DATA = {
 // Per-panel default visible layers
 const PANEL_LAYERS = {
   overview:  ['paramoFill', 'paramoOutline'],
-  species:   ['paramoOutline', 'speciesHexLayer'],  // hex layer replaces raw points as default
+  species:   ['paramoOutline', 'gbifPointsLayer'],   // GBIF points are the default theme
   timeline:  ['paramoOutline', 'speciesPoints'],
   threats:   ['paramoOutline', 'agriculture', 'fire'],
   urgency:   ['urgencyHexagons', 'paramoOutline'],
@@ -210,8 +210,8 @@ const PANEL_LAYERS = {
 // Current time-period filter for species points
 let currentPeriod = 'all';
 
-// Active theme for the species hex layer
-let activeSpeciesTheme = 'richness';
+// Active theme for the species hex layer — 'points' is default (shows GBIF occurrence points)
+let activeSpeciesTheme = 'points';
 
 // GBIF points runtime state
 let gbifHeatLayer         = null;   // L.heatLayer instance (zoom-out view)
@@ -793,6 +793,7 @@ const GBIF_COLORS = {
   plant:  { fill: '#4F9942', stroke: '#2D6A4F' },
   other:  { fill: '#9AA5B4', stroke: '#6B7A8D' },
 };
+window.GBIF_COLORS = GBIF_COLORS;  // expose so species.js can colour modals
 
 function gbifKingdomKey(kingdom) {
   const k = (kingdom || '').toLowerCase();
@@ -843,8 +844,14 @@ function buildGbifPointsLayer() {
     url: GBIF_POINTS_URL,
     pointToLayer: (feature, latlng) => L.marker(latlng, { icon: createHexIcon(feature.properties?.kingdom) }),
     onEachFeature(feature, layer) {
-      layer.bindPopup(buildGbifPointPopup(feature.properties || {}), { maxWidth: 260 });
-      // Highlight on hover by swapping icon
+      // Click opens the full species modal (with GBIF photo) via species.js
+      layer.on('click', function(e) {
+        L.DomEvent.stopPropagation(e);
+        if (typeof window.openGbifPointModal === 'function') {
+          window.openGbifPointModal(feature.properties || {});
+        }
+      });
+      // Highlight on hover by swapping to a larger, fully-opaque icon
       layer.on('mouseover', function() {
         const { fill, stroke } = GBIF_COLORS[gbifKingdomKey(feature.properties?.kingdom)];
         const pts = '11,5 8.5,0.5 3.5,0.5 1,5 3.5,9.5 8.5,9.5';

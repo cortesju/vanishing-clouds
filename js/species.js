@@ -34,6 +34,143 @@ const TIME_PERIOD_COLORS = {
 };
 
 // ============================================================
+// THEME DESCRIPTIONS — shown below the theme selector for hex themes
+// ============================================================
+const THEME_DESCRIPTIONS = {
+  richness: 'Hexagons colored by the number of unique species recorded in each cell. Darker blue = higher species richness across the páramo.',
+  count:    'Total GBIF occurrence records per hexagon cell, regardless of species. Darker purple = more observations over all time.',
+  decade:   'Each hexagon shows the most recent decade in which any species was recorded — revealing where new scientific discoveries are actively being made.',
+};
+
+function updateThemeDescription(theme) {
+  const el = document.getElementById('theme-description');
+  if (!el) return;
+  const text = THEME_DESCRIPTIONS[theme] || '';
+  el.textContent = text;
+  el.classList.toggle('hidden', !text);
+}
+
+// ============================================================
+// GBIF PHOTO FETCH — pulls first StillImage from GBIF occurrence API
+// Returns { url, creator, license } or null on failure / no photo.
+// ============================================================
+async function fetchGbifPhoto(scientificName) {
+  if (!scientificName || scientificName === '—') return null;
+  try {
+    const enc = encodeURIComponent(scientificName);
+    const res = await fetch(
+      `https://api.gbif.org/v1/occurrence/search?scientificName=${enc}&mediaType=StillImage&limit=8`
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    for (const occ of data.results || []) {
+      for (const m of occ.media || []) {
+        if (m.identifier && (m.type === 'StillImage' || !m.type)) {
+          return {
+            url:     m.identifier,
+            creator: m.creator    || occ.recordedBy || '',
+            license: m.license    || '',
+          };
+        }
+      }
+    }
+  } catch (_) { /* network failure — silently ignored */ }
+  return null;
+}
+
+// ============================================================
+// openGbifPointModal — full-screen modal for map point clicks.
+// Shows GBIF photo (async) + species info from feature properties.
+// ============================================================
+window.openGbifPointModal = function(props) {
+  const name    = props.scientificName || props.species || '—';
+  const kingdom = props.kingdom        || '—';
+  const year    = props.year ? String(props.year) : '—';
+  const family  = props.family         || '—';
+  const decade  = props.decade_period  || '—';
+
+  // Resolve colour from maps.js GBIF_COLORS
+  const colors = window.GBIF_COLORS || {};
+  const kl = (kingdom || '').toLowerCase();
+  const kKey = kl.startsWith('anim') ? 'animal'
+             : (kl.startsWith('plant') || kl.startsWith('virid')) ? 'plant' : 'other';
+  const fillColor = (colors[kKey] || {}).fill || '#9AA5B4';
+
+  const modalBody = document.getElementById('modal-body');
+  const modal     = document.getElementById('species-modal');
+  if (!modalBody || !modal) return;
+
+  modalBody.innerHTML = `
+    <div id="modal-photo-wrap" class="modal-photo-wrap">
+      <div class="modal-photo-spinner">Searching for photo…</div>
+    </div>
+    <div style="padding:1.4rem 0 0.5rem">
+      <p class="modal-gbif-name" style="color:${fillColor}">${name}</p>
+      <table class="modal-gbif-table">
+        <tr><td>Kingdom</td><td>${kingdom}</td></tr>
+        <tr><td>Family</td><td>${family}</td></tr>
+        <tr><td>Year observed</td><td>${year}</td></tr>
+        <tr><td>Decade</td><td>${decade}</td></tr>
+      </table>
+      <p style="margin-top:1rem;font-size:0.72rem;color:#9AA5B4">
+        Data: GBIF / iNaturalist · CC BY 4.0
+      </p>
+    </div>`;
+
+  modal.classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  // Fetch photo asynchronously — update the placeholder when ready
+  fetchGbifPhoto(name).then(photo => {
+    const wrap = document.getElementById('modal-photo-wrap');
+    if (!wrap) return;
+    if (photo) {
+      wrap.innerHTML = `
+        <img class="modal-species-photo" src="${photo.url}" alt="${name}"
+             onerror="this.closest('.modal-photo-wrap').style.display='none'">
+        ${photo.creator ? `<p class="modal-photo-credit">📷 ${photo.creator}</p>` : ''}`;
+    } else {
+      wrap.style.display = 'none';
+    }
+  });
+};
+
+// ============================================================
+// renderGbifSpeciesList — fills #gbif-species-list with species
+// from allSpecies (already loaded). Clicking a row opens the modal.
+// ============================================================
+function renderGbifSpeciesList() {
+  const container = document.getElementById('gbif-species-list');
+  if (!container) return;
+
+  if (!allSpecies.length) {
+    container.innerHTML = '<p class="sp-list-loading">Loading species data…</p>';
+    return;
+  }
+
+  container.innerHTML = allSpecies.map(sp => {
+    const grp  = GROUP_CONFIG[sp.group]       || { icon: '🔵', color: '#555', bg: '#EEE' };
+    const iucn = IUCN_CONFIG[sp.iucn_status]  || { color: '#888', bg: '#EEE' };
+    return `
+      <button class="gbif-sp-row" data-id="${sp.id}">
+        <span class="gbif-sp-icon" style="background:${grp.bg};color:${grp.color}">${grp.icon}</span>
+        <span class="gbif-sp-names">
+          <span class="gbif-sp-common">${sp.common_name || sp.scientific_name}</span>
+          <span class="gbif-sp-sci">${sp.scientific_name}</span>
+        </span>
+        <span class="gbif-sp-iucn"
+              style="background:${iucn.bg};color:${iucn.color};border-color:${iucn.color}40">
+          ${sp.iucn_status}
+        </span>
+      </button>`;
+  }).join('');
+
+  container.querySelectorAll('.gbif-sp-row').forEach(row => {
+    row.addEventListener('click', () => openSpeciesModal(row.dataset.id));
+  });
+}
+
+// ============================================================
 // loadSpeciesData
 // ============================================================
 async function loadSpeciesData() {
@@ -171,6 +308,11 @@ function openSpeciesModal(speciesId) {
   if (!modalBody) return;
 
   modalBody.innerHTML = `
+    <!-- Hero photo — loaded async from GBIF API -->
+    <div id="modal-photo-wrap" class="modal-photo-wrap">
+      <div class="modal-photo-spinner">Searching for photo…</div>
+    </div>
+
     <div class="modal-species-header">
       <div class="modal-species-icon" style="background:${groupCfg.bg}; color:${groupCfg.color};">
         ${groupCfg.icon}
@@ -224,6 +366,7 @@ function openSpeciesModal(speciesId) {
 
     <h4 class="modal-map-heading">Occurrence Map</h4>
     <p class="modal-occurrence-count">${occurrences.length} occurrence record${occurrences.length !== 1 ? 's' : ''} shown</p>
+    <div id="modal-mini-map" class="mini-map"></div>
 
     <p class="modal-attribution">
       Data: GBIF / iNaturalist. Licensed CC BY 4.0.
@@ -235,6 +378,20 @@ function openSpeciesModal(speciesId) {
         <span style="color:#27AE60">●</span> 2021–Present
       </span>
     </p>`;
+
+  // Fetch hero photo async
+  fetchGbifPhoto(sp.scientific_name).then(photo => {
+    const wrap = document.getElementById('modal-photo-wrap');
+    if (!wrap) return;
+    if (photo) {
+      wrap.innerHTML = `
+        <img class="modal-species-photo" src="${photo.url}" alt="${sp.scientific_name}"
+             onerror="this.closest('.modal-photo-wrap').style.display='none'">
+        ${photo.creator ? `<p class="modal-photo-credit">📷 ${photo.creator}</p>` : ''}`;
+    } else {
+      wrap.style.display = 'none';
+    }
+  });
 
   // Show modal
   const modal = document.getElementById('species-modal');
@@ -355,11 +512,14 @@ function closeModal() {
 // ============================================================
 window.initSpeciesPanel = function() {
   // If data is already loaded, render the grid immediately
-  if (allSpecies.length > 0) {
-    renderSpeciesGrid(allSpecies);
-  }
+  if (allSpecies.length > 0) renderSpeciesGrid(allSpecies);
 
-  // ── Re-wire species card filter buttons ────────────────────
+  const currentTheme = window._activeSpeciesTheme || 'points';
+
+  // ── Theme description ──────────────────────────────────────
+  updateThemeDescription(currentTheme);
+
+  // ── Species card filter buttons ────────────────────────────
   const filterButtons = document.querySelectorAll('.filter-btn');
   filterButtons.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -369,31 +529,30 @@ window.initSpeciesPanel = function() {
     });
   });
 
-  // ── Wire map theme selector buttons ────────────────────────
-  const currentTheme = window._activeSpeciesTheme || 'richness';
-
+  // ── Map theme selector buttons ─────────────────────────────
   const themeButtons = document.querySelectorAll('.theme-btn');
   themeButtons.forEach(btn => {
     btn.classList.toggle('active', btn.dataset.theme === currentTheme);
-
     btn.addEventListener('click', () => {
       const theme = btn.dataset.theme;
       themeButtons.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       window._activeSpeciesTheme = theme;
 
-      // Show / hide the Animal|Plant sub-filter
+      // Show / hide the points sub-filter block
       const ptsFilter = document.getElementById('species-points-filter');
       if (ptsFilter) ptsFilter.classList.toggle('hidden', theme !== 'points');
 
-      // Reset sub-filter to "All" whenever theme changes
+      // Reset kingdom sub-filter to "All" when leaving points theme
       if (theme !== 'points') {
-        document.querySelectorAll('.pts-btn').forEach(b => b.classList.toggle('active', !b.dataset.kingdom));
+        document.querySelectorAll('.pts-btn').forEach(b =>
+          b.classList.toggle('active', !b.dataset.kingdom)
+        );
       }
 
-      if (typeof window.switchSpeciesTheme === 'function') {
-        window.switchSpeciesTheme(theme);
-      }
+      updateThemeDescription(theme);
+
+      if (typeof window.switchSpeciesTheme === 'function') window.switchSpeciesTheme(theme);
     });
   });
 
@@ -401,7 +560,7 @@ window.initSpeciesPanel = function() {
   const ptsFilter = document.getElementById('species-points-filter');
   if (ptsFilter) ptsFilter.classList.toggle('hidden', currentTheme !== 'points');
 
-  // ── Wire Animal / Plant sub-filter buttons ─────────────────
+  // ── Kingdom sub-filter buttons ─────────────────────────────
   const ptsBtns = document.querySelectorAll('.pts-btn');
   ptsBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -413,33 +572,20 @@ window.initSpeciesPanel = function() {
     });
   });
 
-  // ── Wire time slider ──────────────────────────────────────
-  const tsRange = document.getElementById('ts-range');
+  // ── Time slider ────────────────────────────────────────────
+  const tsRange   = document.getElementById('ts-range');
   const tsPlayBtn = document.getElementById('ts-play-btn');
-
   if (tsRange) {
-    // Restore slider position from maps.js state (GBIF_DECADES length = 5)
-    const decades = window.GBIF_DECADES || [];
-    const currentIdx = (typeof window.setGbifDecade === 'function' && decades.length)
-      ? Math.max(0, Math.min(decades.length - 1,
-          parseInt(tsRange.getAttribute('data-current') || '4', 10)))
-      : 4;
-    tsRange.value = currentIdx;
-
     tsRange.addEventListener('input', () => {
-      if (tsPlayBtn) {
-        tsPlayBtn.textContent = '▶ Play';
-        tsPlayBtn.classList.remove('playing');
-      }
+      if (tsPlayBtn) { tsPlayBtn.textContent = '▶ Play'; tsPlayBtn.classList.remove('playing'); }
       if (typeof window.pauseGbifTimeline === 'function') window.pauseGbifTimeline();
-      if (typeof window.setGbifDecade === 'function') window.setGbifDecade(tsRange.value);
+      if (typeof window.setGbifDecade    === 'function') window.setGbifDecade(tsRange.value);
     });
   }
-
   if (tsPlayBtn) {
     tsPlayBtn.addEventListener('click', () => {
-      const isPlaying = tsPlayBtn.classList.contains('playing');
-      if (isPlaying) {
+      const playing = tsPlayBtn.classList.contains('playing');
+      if (playing) {
         if (typeof window.pauseGbifTimeline === 'function') window.pauseGbifTimeline();
         tsPlayBtn.textContent = '▶ Play';
         tsPlayBtn.classList.remove('playing');
@@ -451,7 +597,24 @@ window.initSpeciesPanel = function() {
     });
   }
 
-  // Render the legend for the current theme
+  // ── Species legend toggle ──────────────────────────────────
+  const spToggle = document.getElementById('sp-legend-toggle');
+  const spList   = document.getElementById('gbif-species-list');
+  if (spToggle && spList) {
+    spToggle.addEventListener('click', () => {
+      const isOpen = !spList.classList.contains('hidden');
+      spList.classList.toggle('hidden', isOpen);
+      const arrow = spToggle.querySelector('.sp-legend-arrow');
+      if (arrow) arrow.textContent = isOpen ? '›' : '‹';
+      // Lazy-render on first open
+      if (!isOpen && !spList.dataset.rendered) {
+        renderGbifSpeciesList();
+        spList.dataset.rendered = '1';
+      }
+    });
+  }
+
+  // ── Initial legend render ──────────────────────────────────
   window.renderSpeciesHexLegend(currentTheme);
 };
 
