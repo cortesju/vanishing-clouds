@@ -228,8 +228,12 @@ function renderSpeciesGrid(species) {
     card.style.animationDelay = `${index * 60}ms`;
 
     card.innerHTML = `
-      <div class="species-icon" style="background:${groupCfg.bg}; color:${groupCfg.color};">
-        ${groupCfg.icon}
+      <!-- Photo strip — emoji background shown first, GBIF photo fades in -->
+      <div class="species-card-photo-wrap">
+        <div class="species-card-photo-bg" style="background:${groupCfg.bg};color:${groupCfg.color}">
+          ${groupCfg.icon}
+        </div>
+        <img class="species-card-photo" data-sci="${sp.scientific_name}" alt="${sp.common_name || sp.scientific_name}">
       </div>
       <div class="species-info">
         <div class="species-badges">
@@ -250,20 +254,52 @@ function renderSpeciesGrid(species) {
       </div>`;
 
     card.addEventListener('click', () => openSpeciesModal(sp.id));
-
-    // Keyboard accessibility
     card.setAttribute('tabindex', '0');
     card.setAttribute('role', 'button');
     card.setAttribute('aria-label', `View details for ${sp.common_name}`);
-    card.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        openSpeciesModal(sp.id);
-      }
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSpeciesModal(sp.id); }
     });
 
     grid.appendChild(card);
   });
+
+  // Lazy-load photos via IntersectionObserver so we don't fire 20 GBIF requests at once
+  initCardPhotoObserver(grid);
+}
+
+// ============================================================
+// Lazy card photo loading
+// ============================================================
+function initCardPhotoObserver(grid) {
+  const imgs = grid.querySelectorAll('.species-card-photo[data-sci]');
+  if (!imgs.length) return;
+
+  if (!('IntersectionObserver' in window)) {
+    imgs.forEach(loadCardPhoto);  // fallback: load all immediately
+    return;
+  }
+
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      loadCardPhoto(e.target);
+      obs.unobserve(e.target);
+    });
+  }, { rootMargin: '120px' });
+
+  imgs.forEach(img => obs.observe(img));
+}
+
+async function loadCardPhoto(img) {
+  const sci = img.getAttribute('data-sci');
+  if (!sci) return;
+  img.removeAttribute('data-sci');  // prevent double-load
+  const photo = await fetchGbifPhoto(sci);
+  if (!photo) return;
+  img.onload  = () => img.classList.add('loaded');
+  img.onerror = () => {};  // silently keep the emoji background
+  img.src = photo.url;
 }
 
 // ============================================================
@@ -552,13 +588,19 @@ window.initSpeciesPanel = function() {
 
       updateThemeDescription(theme);
 
+      // Show hex time slider for hex themes, hide for points
+      const hexTs = document.getElementById('hex-time-section');
+      if (hexTs) hexTs.classList.toggle('hidden', theme === 'points');
+
       if (typeof window.switchSpeciesTheme === 'function') window.switchSpeciesTheme(theme);
     });
   });
 
-  // ── Restore sub-filter visibility on panel re-render ───────
+  // ── Restore sub-filter and hex time slider visibility on re-render ──
   const ptsFilter = document.getElementById('species-points-filter');
   if (ptsFilter) ptsFilter.classList.toggle('hidden', currentTheme !== 'points');
+  const hexTs = document.getElementById('hex-time-section');
+  if (hexTs) hexTs.classList.toggle('hidden', currentTheme === 'points');
 
   // ── Kingdom sub-filter buttons ─────────────────────────────
   const ptsBtns = document.querySelectorAll('.pts-btn');
@@ -593,6 +635,31 @@ window.initSpeciesPanel = function() {
         tsPlayBtn.textContent = '⏸ Pause';
         tsPlayBtn.classList.add('playing');
         if (typeof window.playGbifTimeline === 'function') window.playGbifTimeline();
+      }
+    });
+  }
+
+  // ── Hex layer time slider (richness / count / decade themes) ──
+  const hexTsRange   = document.getElementById('hex-ts-range');
+  const hexTsPlayBtn = document.getElementById('hex-ts-play-btn');
+  if (hexTsRange) {
+    hexTsRange.addEventListener('input', () => {
+      if (hexTsPlayBtn) { hexTsPlayBtn.textContent = '▶ Play'; hexTsPlayBtn.classList.remove('playing'); }
+      if (typeof window.pauseHexTimeline === 'function') window.pauseHexTimeline();
+      if (typeof window.setHexDecade    === 'function') window.setHexDecade(hexTsRange.value);
+    });
+  }
+  if (hexTsPlayBtn) {
+    hexTsPlayBtn.addEventListener('click', () => {
+      const playing = hexTsPlayBtn.classList.contains('playing');
+      if (playing) {
+        if (typeof window.pauseHexTimeline === 'function') window.pauseHexTimeline();
+        hexTsPlayBtn.textContent = '▶ Play';
+        hexTsPlayBtn.classList.remove('playing');
+      } else {
+        hexTsPlayBtn.textContent = '⏸ Pause';
+        hexTsPlayBtn.classList.add('playing');
+        if (typeof window.playHexTimeline === 'function') window.playHexTimeline();
       }
     });
   }

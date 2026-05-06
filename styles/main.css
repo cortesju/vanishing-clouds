@@ -662,6 +662,40 @@ a:hover { color: var(--primary); text-decoration: underline; }
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ── Species card photo strip (replaces the old 40×40 emoji icon) ── */
+.species-card-photo-wrap {
+  /* negative margins to bleed to card edges, then padding resumes below */
+  width: calc(100% + 1.8rem);
+  margin: -0.9rem -0.9rem 0.75rem;
+  height: 110px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.species-card-photo-bg {
+  /* shown while photo loads — coloured by kingdom */
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+
+.species-card-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+.species-card-photo.loaded { opacity: 1; }
+
+/* Keep the old .species-icon for the modal header — it uses a different size */
 .species-icon {
   font-size: 1.5rem;
   width: 40px;
@@ -839,6 +873,13 @@ a:hover { color: var(--primary); text-decoration: underline; }
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+/* ── Hex theme time slider (below legend, for richness/count/decade themes) ── */
+.hex-time-section {
+  margin-top: 0.75rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid rgba(0,0,0,0.07);
 }
 
 /* ── GBIF hex marker — override Leaflet's default icon wrapper ── */
@@ -2070,22 +2111,20 @@ a:hover { color: var(--primary); text-decoration: underline; }
   padding: 0.4rem 0;
 }
 
-/* ── Modal hero photo (GBIF photo at top of species/point modal) ── */
+/* ── Modal species photo — contained image, no negative-margin bleed ── */
 .modal-photo-wrap {
-  width: calc(100% + 4.5rem);
-  margin: -2.25rem -2.25rem 1.5rem;
-  height: 210px;
+  width: 100%;
+  border-radius: var(--radius);
   overflow: hidden;
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  background: #e8ede8;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  margin-bottom: 1.25rem;
+  background: #dce8dc;
   position: relative;
+  /* height is driven by the <img> — no fixed height so portrait photos show fully */
 }
 
 .modal-photo-spinner {
+  padding: 2rem 0;
+  text-align: center;
   font-size: 0.78rem;
   color: var(--text-light);
   font-style: italic;
@@ -2093,9 +2132,11 @@ a:hover { color: var(--primary); text-decoration: underline; }
 
 .modal-species-photo {
   width: 100%;
-  height: 100%;
+  height: auto;
+  max-height: 300px;
   object-fit: cover;
   display: block;
+  border-radius: var(--radius);
 }
 
 .modal-photo-credit {
@@ -2103,7 +2144,7 @@ a:hover { color: var(--primary); text-decoration: underline; }
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(0,0,0,0.42);
+  background: rgba(0,0,0,0.44);
   color: rgba(255,255,255,0.9);
   font-size: 0.65rem;
   padding: 3px 8px;

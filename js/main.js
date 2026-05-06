@@ -122,6 +122,26 @@ const PANEL_TEMPLATES = {
         </div>
 
         <div id="species-hex-legend" class="species-hex-legend"></div>
+
+        <!-- Hex layer time slider — visible for richness / count / decade themes -->
+        <div id="hex-time-section" class="hex-time-section hidden">
+          <div class="ts-header">
+            <span class="species-section-label" style="margin:0">THROUGH TIME</span>
+            <span id="hex-ts-label" class="ts-decade-label">2021–Now</span>
+          </div>
+          <div class="ts-track-wrap">
+            <input id="hex-ts-range" class="ts-range" type="range"
+                   min="0" max="4" step="1" value="4">
+            <div class="ts-marks">
+              <span>Pre-1980</span>
+              <span>1980s</span>
+              <span>2000s</span>
+              <span>2010s</span>
+              <span>Now</span>
+            </div>
+          </div>
+          <button id="hex-ts-play-btn" class="ts-play-btn">▶ Play</button>
+        </div>
       </div>
 
       <div class="panel-divider"></div>

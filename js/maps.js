@@ -219,6 +219,10 @@ let _gbifKingdomFilter    = null;   // "Animalia" | "Plantae" | null
 let _gbifDecadeIdx        = 4;      // index into GBIF_DECADES (4 = all time)
 let _gbifPlayInterval     = null;   // setInterval handle for timeline play
 
+// Hex layer timeline state (shared across richness / count / decade themes)
+let _hexDecadeIdx         = 4;      // index into GBIF_DECADES (4 = show all)
+let _hexPlayInterval      = null;   // setInterval handle for hex play
+
 // Cumulative decade time steps — each step adds one more era to the WHERE clause.
 // Exposed so the sidebar JS can read labels without duplication.
 const GBIF_DECADES = [
@@ -972,23 +976,62 @@ window.pauseGbifTimeline = function() {
   if (btn) { btn.textContent = '▶ Play'; btn.classList.remove('playing'); }
 };
 
+// ── Hex layer decade filter ───────────────────────────────────────────────
+window.setHexDecade = function(idx) {
+  _hexDecadeIdx = Number(idx);
+  const where = GBIF_DECADES[_hexDecadeIdx]?.where || '1=1';
+  if (LG.speciesHexLayer) LG.speciesHexLayer.setWhere(where);
+  const lbl = document.getElementById('hex-ts-label');
+  if (lbl) lbl.textContent = GBIF_DECADES[_hexDecadeIdx]?.label ?? '';
+};
+
+window.playHexTimeline = function() {
+  if (_hexPlayInterval) return;
+  if (_hexDecadeIdx >= GBIF_DECADES.length - 1) {
+    _hexDecadeIdx = -1;
+    const rng = document.getElementById('hex-ts-range');
+    if (rng) rng.value = 0;
+  }
+  _hexPlayInterval = setInterval(() => {
+    _hexDecadeIdx = Math.min(_hexDecadeIdx + 1, GBIF_DECADES.length - 1);
+    const rng = document.getElementById('hex-ts-range');
+    if (rng) rng.value = _hexDecadeIdx;
+    window.setHexDecade(_hexDecadeIdx);
+    if (_hexDecadeIdx >= GBIF_DECADES.length - 1) window.pauseHexTimeline();
+  }, 1400);
+};
+
+window.pauseHexTimeline = function() {
+  clearInterval(_hexPlayInterval);
+  _hexPlayInterval = null;
+  const btn = document.getElementById('hex-ts-play-btn');
+  if (btn) { btn.textContent = '▶ Play'; btn.classList.remove('playing'); }
+};
+
 // Called by the sidebar theme selector (wired in species.js).
 window.switchSpeciesTheme = function(themeName) {
-  // Stop timeline if switching away from points
+  // Stop whichever timeline is running when switching away from its theme
   if (activeSpeciesTheme === 'points' && themeName !== 'points') {
     window.pauseGbifTimeline();
   }
+  if (activeSpeciesTheme !== 'points' && themeName === 'points') {
+    window.pauseHexTimeline();
+    // Reset hex layer to show all data when leaving
+    if (LG.speciesHexLayer) LG.speciesHexLayer.setWhere('1=1');
+    _hexDecadeIdx = 4;
+  }
+
   activeSpeciesTheme = themeName;
   window._activeSpeciesTheme = themeName;
 
   if (themeName === 'points') {
     if (LG.speciesHexLayer && map.hasLayer(LG.speciesHexLayer)) map.removeLayer(LG.speciesHexLayer);
-    updateGbifLayersByZoom();  // decides heat or points based on zoom
+    updateGbifLayersByZoom();
   } else {
     // Remove both GBIF layers
     if (LG.gbifPointsLayer && map.hasLayer(LG.gbifPointsLayer)) map.removeLayer(LG.gbifPointsLayer);
     if (gbifHeatLayer && map.hasLayer(gbifHeatLayer)) map.removeLayer(gbifHeatLayer);
-    // Show hex layer with new theme
+    // Show hex layer styled for this theme
     if (LG.speciesHexLayer) {
       if (!map.hasLayer(LG.speciesHexLayer)) LG.speciesHexLayer.addTo(map);
       if (SPECIES_HEX_THEMES[themeName]) {
