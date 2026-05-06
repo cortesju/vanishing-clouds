@@ -347,6 +347,22 @@ const PANEL_TEMPLATES = {
           <div class="bp-layer-swatch"></div>
         </div>
 
+        <div class="bp-layer-card" id="bp-card-equatorial" style="--layer-color:#C8A840">
+          <div class="bp-layer-card-header">
+            <div class="bp-layer-icon" style="background:rgba(200,168,64,0.13);color:#8B6914">🌐</div>
+            <div class="bp-layer-meta">
+              <span class="bp-layer-name">Equatorial Influence</span>
+              <span class="bp-layer-label">Tropical latitude · Near the equator</span>
+            </div>
+            <label class="bp-switch" title="Toggle equatorial influence layer on map">
+              <input type="checkbox" id="bp-toggle-equatorial">
+              <span class="bp-switch-track"><span class="bp-switch-thumb"></span></span>
+            </label>
+          </div>
+          <p class="bp-layer-desc">Páramos exist where extreme elevation meets tropical latitude. Near the equator, solar radiation remains intense year-round and seasonal variation is low. When these tropical conditions are lifted above 3,000 m in the Andes, unique alpine ecosystems emerge with dramatic day-night temperature swings, persistent cloud formation, and specialized biodiversity found nowhere else on Earth. Highest suitability lies between 11°N and 5°S.</p>
+          <div class="bp-layer-swatch"></div>
+        </div>
+
         <div class="bp-layer-card" id="bp-card-seasonality" style="--layer-color:#6A1B9A">
           <div class="bp-layer-card-header">
             <div class="bp-layer-icon" style="background:rgba(106,27,154,0.13);color:#4A148C">☁</div>
@@ -388,6 +404,7 @@ const PANEL_TEMPLATES = {
         <div class="insight-box">
           <h4>What this tells us</h4>
           <p>Páramos are not accidents of nature. They arise where tropical latitude, Andean topography, high elevation, cool temperatures, and persistent moisture all converge — and nowhere is that overlap more concentrated than in Colombia's three cordilleras.</p>
+          <p style="margin-top:0.5rem">Páramos emerge where tropical latitude and high Andean elevation overlap. Colombia contains one of the largest continuous regions on Earth where equatorial climate, mountain elevation, moisture, and alpine conditions converge simultaneously — making its páramos globally irreplaceable.</p>
           <p style="margin-top:0.5rem">Compare the suitability model with the official IAvH polygons: they should align closely over the established páramo belt, with divergence at transition zones where ecological classification is genuinely ambiguous.</p>
         </div>
         <div class="bp-suitability-legend">

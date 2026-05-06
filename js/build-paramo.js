@@ -19,6 +19,7 @@ const ELEVATION_LAYER_URL        = null;  // High-elevation zone raster (≥2800
 const PRECIPITATION_LAYER_URL    = null;  // Annual precipitation raster
 const MEAN_TEMP_LAYER_URL        = null;  // Mean annual temperature raster
 const CLIMATE_LAYER_URL          = null;  // Climate seasonality / moisture index raster
+const EQUATORIAL_LAYER_URL       = null;  // Equatorial influence raster (latitudinal gradient)
 const SUITABILITY_COMPOSITE_URL  = null;  // Composite suitability raster (low→high gradient)
 // Note: official páramo polygons are already loaded via PARAMO_FEATURE_URL in maps.js
 
@@ -61,6 +62,17 @@ const BUILD_LAYERS_CONFIG = [
     opacity: 0.38,
   },
   {
+    id:            'equatorial',
+    icon:          '🌐',
+    name:          'Equatorial Influence',
+    label:         'Tropical latitude · Near the equator',
+    desc:          'Páramos exist where extreme elevation meets tropical latitude. Near the equator, solar radiation remains intense year-round and seasonal variation is low. When these tropical conditions are lifted above 3,000 m in the Andes, unique alpine ecosystems emerge with dramatic day-night temperature swings, persistent cloud formation, and specialized biodiversity found nowhere else on Earth.',
+    color:         '#C8A840',   // warm gold — solar / equatorial
+    url:           EQUATORIAL_LAYER_URL,
+    opacity:       1.0,         // SVG handles its own opacity via gradient stops
+    customFactory: _createEquatorialOverlay,  // hoisted function — always available
+  },
+  {
     id:      'seasonality',
     icon:    '☁',
     name:    'Climate Seasonality',
@@ -88,18 +100,58 @@ let _bpInitialized    = false;
 
 function _createLayerOverlay(cfg) {
   if (cfg.url) {
-    // Real tile service
+    // Real tile service — URL takes precedence over customFactory
     return cfg.url.includes('{z}')
       ? L.tileLayer(cfg.url, { opacity: cfg.opacity, attribution: '' })
       : L.imageOverlay(cfg.url, _BP_BOUNDS, { opacity: cfg.opacity });
   }
-  // Placeholder: translucent colored rectangle over Colombia
+  if (cfg.customFactory) {
+    // Special-purpose placeholder (e.g. equatorial gradient SVG)
+    return cfg.customFactory();
+  }
+  // Standard placeholder: translucent colored rectangle over Colombia
   return L.rectangle(_BP_BOUNDS, {
     color:       cfg.color,
     fillColor:   cfg.color,
     fillOpacity: cfg.opacity * 0.85,
     weight:      0,
     interactive: false,
+  });
+}
+
+// Equatorial influence — SVG gradient ImageOverlay.
+// Colombia spans -4.2°S → 12.5°N (16.7° total).
+// The equator (0°) sits 4.2/16.7 = 25.1% from the southern edge,
+// which is 74.9% ≈ 75% from the TOP of the image overlay.
+// The gradient peaks at that latitude and fades smoothly north and south.
+function _createEquatorialOverlay() {
+  const svg = [
+    '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="400">',
+    '  <defs>',
+    '    <linearGradient id="eq" x1="0" y1="0" x2="0" y2="1">',
+    // 12.5°N (top) — barely any tropical influence at Colombia's northern tip
+    '      <stop offset="0%"   stop-color="#C8A840" stop-opacity="0.00"/>',
+    '      <stop offset="20%"  stop-color="#C8A840" stop-opacity="0.03"/>',
+    '      <stop offset="42%"  stop-color="#C8A840" stop-opacity="0.09"/>',
+    '      <stop offset="60%"  stop-color="#C8A840" stop-opacity="0.17"/>',
+    // ~3°N — approaching equatorial belt
+    '      <stop offset="70%"  stop-color="#D4AE38" stop-opacity="0.24"/>',
+    // ~0° equator — peak suitability
+    '      <stop offset="75%"  stop-color="#D4AE38" stop-opacity="0.30"/>',
+    // 2–4°S — still tropical, trailing off slightly south of equator
+    '      <stop offset="85%"  stop-color="#C8A840" stop-opacity="0.22"/>',
+    '      <stop offset="100%" stop-color="#B89830" stop-opacity="0.10"/>',
+    '    </linearGradient>',
+    '  </defs>',
+    '  <rect width="100" height="400" fill="url(#eq)"/>',
+    '</svg>',
+  ].join('');
+
+  const dataUrl = 'data:image/svg+xml;base64,' + btoa(svg);
+  return L.imageOverlay(dataUrl, _BP_BOUNDS, {
+    opacity:     1.0,
+    interactive: false,
+    className:   'bp-equatorial-overlay',
   });
 }
 
