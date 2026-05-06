@@ -416,8 +416,13 @@ function initHillshadeOverlay() {
     preserveDrawingBuffer: false,
   });
 
-  // Hillshade is OFF by default — hide its canvas immediately after creation
-  container.style.display = 'none';
+  // Hillshade is OFF by default.
+  // Hide AFTER the MapLibre 'load' event so the WebGL context fully initialises
+  // before the canvas is hidden — hiding during init can break the GL context
+  // and cause syncAllGL to stop updating the other GL canvases.
+  hillshadeMapGL.once('load', function () {
+    container.style.display = 'none';
+  });
 
   map.on('move',    syncAllGL);
   map.on('moveend', syncAllGL);
