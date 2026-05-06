@@ -414,10 +414,10 @@ const PANEL_TEMPLATES = {
         </div>
       </div>
 
-      <!-- Placeholder notice -->
+      <!-- Equatorial note: SVG gradient is the designed visualization for this layer -->
       <div class="bp-placeholder-notice">
-        <span class="bp-placeholder-icon">⚠</span>
-        <span>Environmental overlays are placeholder data. Replace the URL constants at the top of <code>js/build-paramo.js</code> with your raster tile services to enable real environmental layers.</span>
+        <span class="bp-placeholder-icon">🌐</span>
+        <span>The <strong>Equatorial Influence</strong> layer renders a calculated latitudinal gradient — highest suitability near the equator, fading north. Replace <code>EQUATORIAL_LAYER_URL</code> in <code>js/build-paramo.js</code> to use a published raster instead.</span>
       </div>
 
     </div>

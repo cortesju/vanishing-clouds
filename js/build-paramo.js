@@ -15,12 +15,12 @@
 //   ImageOverlay (static):   'https://your-server.com/colombia-layer.png'
 // When null, a clearly-labelled placeholder rectangle is used.
 // ============================================================
-const ELEVATION_LAYER_URL        = null;  // High-elevation zone raster (≥2800 m)
-const PRECIPITATION_LAYER_URL    = null;  // Annual precipitation raster
-const MEAN_TEMP_LAYER_URL        = null;  // Mean annual temperature raster
-const CLIMATE_LAYER_URL          = null;  // Climate seasonality / moisture index raster
-const EQUATORIAL_LAYER_URL       = null;  // Equatorial influence raster (latitudinal gradient)
-const SUITABILITY_COMPOSITE_URL  = null;  // Composite suitability raster (low→high gradient)
+const ELEVATION_LAYER_URL        = 'https://tiles.arcgis.com/tiles/ZIL9uO234SBBPGL7/arcgis/rest/services/DEMScore/MapServer';
+const PRECIPITATION_LAYER_URL    = 'https://tiles.arcgis.com/tiles/ZIL9uO234SBBPGL7/arcgis/rest/services/Precipitationcore/MapServer';
+const MEAN_TEMP_LAYER_URL        = 'https://tiles.arcgis.com/tiles/ZIL9uO234SBBPGL7/arcgis/rest/services/MEANtemScore/MapServer';
+const CLIMATE_LAYER_URL          = 'https://tiles.arcgis.com/tiles/ZIL9uO234SBBPGL7/arcgis/rest/services/ClimateScore/MapServer';
+const EQUATORIAL_LAYER_URL       = null;  // No raster published — rendered as SVG latitudinal gradient
+const SUITABILITY_COMPOSITE_URL  = 'https://tiles.arcgis.com/tiles/ZIL9uO234SBBPGL7/arcgis/rest/services/Map1/MapServer';
 // Note: official páramo polygons are already loaded via PARAMO_FEATURE_URL in maps.js
 
 // Bounding box covering all of Colombia (used for placeholder rectangles)
@@ -39,7 +39,7 @@ const BUILD_LAYERS_CONFIG = [
     desc:    'Páramos form above the Andean tree line, typically between 2,800 m and 5,000 m. Elevation controls temperature, UV intensity, and atmospheric pressure — it is the physical stage on which every other condition plays out. Without altitude, the other factors cannot exist in their páramo form.',
     color:   '#546E7A',   // blue-gray — topographic / rock
     url:     ELEVATION_LAYER_URL,
-    opacity: 0.38,
+    opacity: 0.82,
   },
   {
     id:      'temperature',
@@ -49,7 +49,7 @@ const BUILD_LAYERS_CONFIG = [
     desc:    'Mean annual temperatures between 2 °C and 10 °C define the thermal niche of páramo life. Unlike polar environments, páramos experience freeze-thaw cycles daily, not seasonally — temperatures can swing 20 °C in 24 hours, compressing a whole year of climate variation into a single day.',
     color:   '#3949AB',   // indigo — cold
     url:     MEAN_TEMP_LAYER_URL,
-    opacity: 0.35,
+    opacity: 0.82,
   },
   {
     id:      'precipitation',
@@ -59,7 +59,7 @@ const BUILD_LAYERS_CONFIG = [
     desc:    'Persistent cloud cover and high annual rainfall keep páramo soils perpetually saturated. Frailejones — the iconic giant rosette plants — capture cloud moisture through their woolly leaves and channel it into Colombia\'s river systems, supplying water to 48 million people downstream.',
     color:   '#1565C0',   // deep blue — rain
     url:     PRECIPITATION_LAYER_URL,
-    opacity: 0.38,
+    opacity: 0.82,
   },
   {
     id:            'equatorial',
@@ -80,7 +80,7 @@ const BUILD_LAYERS_CONFIG = [
     desc:    'Tropical latitude means no astronomical winter — yet high altitude brings intense UV radiation, thin air, and nightly frost. This paradox of simultaneous extremes, found nowhere else on Earth, shaped every organism living in the páramo into something wholly original.',
     color:   '#6A1B9A',   // purple — atmosphere
     url:     CLIMATE_LAYER_URL,
-    opacity: 0.33,
+    opacity: 0.82,
   },
 ];
 
@@ -98,18 +98,30 @@ let _bpInitialized    = false;
 // OVERLAY FACTORIES
 // ============================================================
 
+// Returns true for ArcGIS tiled MapServer URLs (no {z}/{x}/{y} template).
+// These are loaded with L.esri.tiledMapLayer() rather than L.tileLayer().
+function _isEsriMapServer(url) {
+  return typeof url === 'string' && /\/MapServer\/?$/.test(url);
+}
+
 function _createLayerOverlay(cfg) {
   if (cfg.url) {
-    // Real tile service — URL takes precedence over customFactory
-    return cfg.url.includes('{z}')
-      ? L.tileLayer(cfg.url, { opacity: cfg.opacity, attribution: '' })
-      : L.imageOverlay(cfg.url, _BP_BOUNDS, { opacity: cfg.opacity });
+    // ArcGIS tiled MapServer — use Esri Leaflet (already loaded in index.html)
+    if (_isEsriMapServer(cfg.url)) {
+      return L.esri.tiledMapLayer({ url: cfg.url, opacity: cfg.opacity });
+    }
+    // Standard {z}/{x}/{y} tile service
+    if (cfg.url.includes('{z}')) {
+      return L.tileLayer(cfg.url, { opacity: cfg.opacity, attribution: '' });
+    }
+    // Static image overlay
+    return L.imageOverlay(cfg.url, _BP_BOUNDS, { opacity: cfg.opacity });
   }
   if (cfg.customFactory) {
-    // Special-purpose placeholder (e.g. equatorial gradient SVG)
+    // Special-purpose visualization (e.g. equatorial SVG gradient)
     return cfg.customFactory();
   }
-  // Standard placeholder: translucent colored rectangle over Colombia
+  // Fallback: translucent colored rectangle (used when no URL and no customFactory)
   return L.rectangle(_BP_BOUNDS, {
     color:       cfg.color,
     fillColor:   cfg.color,
@@ -157,11 +169,16 @@ function _createEquatorialOverlay() {
 
 function _createCompositeOverlay() {
   if (SUITABILITY_COMPOSITE_URL) {
-    return SUITABILITY_COMPOSITE_URL.includes('{z}')
-      ? L.tileLayer(SUITABILITY_COMPOSITE_URL, { opacity: 0.70, attribution: '' })
-      : L.imageOverlay(SUITABILITY_COMPOSITE_URL, _BP_BOUNDS, { opacity: 0.70 });
+    // ArcGIS tiled MapServer (Map1 — final páramo suitability composite)
+    if (_isEsriMapServer(SUITABILITY_COMPOSITE_URL)) {
+      return L.esri.tiledMapLayer({ url: SUITABILITY_COMPOSITE_URL, opacity: 0.88 });
+    }
+    if (SUITABILITY_COMPOSITE_URL.includes('{z}')) {
+      return L.tileLayer(SUITABILITY_COMPOSITE_URL, { opacity: 0.88, attribution: '' });
+    }
+    return L.imageOverlay(SUITABILITY_COMPOSITE_URL, _BP_BOUNDS, { opacity: 0.88 });
   }
-  // Placeholder: gold dashed rectangle signalling "suitability result"
+  // Fallback placeholder: gold dashed rectangle
   return L.rectangle(_BP_BOUNDS, {
     color:       '#C8A840',
     fillColor:   '#D4AE38',
