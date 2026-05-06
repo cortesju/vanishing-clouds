@@ -2194,3 +2194,216 @@ a:hover { color: var(--primary); text-decoration: underline; }
   opacity: 1;
   transform: translateY(0);
 }
+
+/* ============================================================
+   24. TERRAIN CROSS-SECTION EXPLORER
+   Draggable gold crosshair + scientific elevation profile panel
+   ============================================================ */
+
+/* Outer wrapper — pointer-events none so the Leaflet map stays fully interactive */
+#terrain-explorer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 460;
+  transition: opacity 0.3s;
+}
+
+#terrain-explorer.hidden {
+  display: none;
+}
+
+/* ── Draggable crosshair line ── */
+#terrain-crosshair {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;           /* Zero-height — children positioned relative to this */
+  pointer-events: none;
+}
+
+#terrain-crosshair-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -1px;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent            0%,
+    rgba(200,169,107,0.10) 3%,
+    rgba(200,169,107,0.65) 8%,
+    #C8A96B                18%,
+    #C8A96B                82%,
+    rgba(200,169,107,0.65) 92%,
+    rgba(200,169,107,0.10) 97%,
+    transparent            100%
+  );
+  cursor: ns-resize;
+  pointer-events: all;
+  transition: box-shadow 0.2s, opacity 0.2s;
+}
+
+#terrain-crosshair-line:hover,
+#terrain-crosshair-line.dragging {
+  box-shadow: 0 0 0 5px rgba(200,169,107,0.12), 0 0 12px rgba(200,169,107,0.20);
+}
+
+/* Left / right end tick marks */
+#terrain-crosshair::before,
+#terrain-crosshair::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  width: 1px;
+  height: 10px;
+  background: rgba(200,169,107,0.55);
+  pointer-events: none;
+}
+#terrain-crosshair::before { left: 0; }
+#terrain-crosshair::after  { right: 0; }
+
+/* Latitude badge — positioned right of the crosshair line */
+#terrain-crosshair-handle {
+  position: absolute;
+  top: -14px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(10,14,18,0.88);
+  border: 1px solid rgba(200,169,107,0.65);
+  border-radius: 4px;
+  padding: 3px 9px 3px 6px;
+  cursor: ns-resize;
+  pointer-events: all;
+  user-select: none;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#terrain-crosshair-handle:hover,
+#terrain-crosshair-handle.dragging {
+  border-color: #C8A96B;
+  box-shadow: 0 2px 12px rgba(200,169,107,0.25);
+}
+
+.crosshair-handle-icon {
+  width: 11px;
+  height: 11px;
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
+#terrain-crosshair-lat {
+  font-size: 0.70rem;
+  font-family: 'Courier New', Courier, monospace;
+  color: #C8A96B;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+/* ── Profile panel — scientific elevation cross-section ── */
+#terrain-profile-panel {
+  position: absolute;
+  bottom: 32px;          /* sit flush above #data-strip */
+  left: 0;
+  right: 0;
+  height: 158px;
+  background: rgba(10,14,18,0.91);
+  backdrop-filter: blur(16px) saturate(1.15);
+  -webkit-backdrop-filter: blur(16px) saturate(1.15);
+  border-top: 1px solid rgba(200,169,107,0.22);
+  pointer-events: all;
+  display: flex;
+  flex-direction: column;
+  transition: opacity 0.25s;
+}
+
+#terrain-profile-panel.tp-loading {
+  opacity: 0.6;
+}
+
+/* Header */
+#terrain-profile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 14px 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.055);
+  flex-shrink: 0;
+}
+
+.tp-header-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+#terrain-profile-title {
+  font-size: 0.66rem;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(200,210,220,0.65);
+}
+
+.tp-sep {
+  color: rgba(200,210,220,0.25);
+  font-size: 0.7rem;
+}
+
+.tp-lat-readout {
+  font-size: 0.68rem;
+  font-family: 'Courier New', Courier, monospace;
+  color: rgba(200,169,107,0.85);
+  letter-spacing: 0.04em;
+}
+
+#terrain-profile-close {
+  background: none;
+  border: none;
+  color: rgba(200,210,220,0.35);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  transition: color 0.15s;
+}
+#terrain-profile-close:hover {
+  color: rgba(200,210,220,0.85);
+}
+
+/* SVG canvas area */
+#terrain-profile-svg-wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+#terrain-profile-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Loading overlay */
+#terrain-profile-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(200,169,107,0.55);
+  pointer-events: none;
+  background: rgba(10,14,18,0.45);
+}
+
+#terrain-profile-loading.hidden {
+  display: none;
+}

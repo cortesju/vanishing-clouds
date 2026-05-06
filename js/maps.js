@@ -6,8 +6,8 @@
 
 // ---- CONFIG ----
 const COLOMBIA_BOUNDS   = [[-4.2, -79.0], [12.5, -66.9]];
-const COLOMBIA_CENTER   = [5.0, -73.8];   // centred on the main Andean páramo belt
-const DEFAULT_ZOOM      = 6;              // country-level view — shows all of Colombia on load
+const COLOMBIA_CENTER   = [5.2, -73.0];   // Andes corridor as visual focal point
+const DEFAULT_ZOOM      = 7;              // slightly closer — Andean belt fills the viewport
 const MIN_ZOOM          = 3;              // zoom-out limit: shows all Colombia
 const MAX_ZOOM          = 9;             // zoom-in limit: ~20 miles on a 1080p monitor (23 mi full-screen)
 
@@ -187,6 +187,7 @@ const LG = {
   mining:          null,
   urgencyHexagons: null,
 };
+window.LG = LG;   // expose to terrain-profile.js and other modules
 
 // All loaded data (fetched once)
 const DATA = {
@@ -271,6 +272,7 @@ function initMap() {
     zoomAnimation:       false,
     markerZoomAnimation: false,
   });
+  window.map = map;   // expose to terrain-profile.js
 
   // ── Zoom diffuse effect ──────────────────────────────────────────────────
   // Blurs #map-main on zoomstart; debounced zoomend removes it 200 ms after
@@ -1352,6 +1354,12 @@ window.setBasemapOpacity = function(key, opacity) {
 
 window.onPanelChange = function(panelId) {
   applyPanelLayers(panelId);
+
+  // Show terrain cross-section explorer on overview panel, hide on others
+  if (window.TP) {
+    if (panelId === 'overview') window.TP.show();
+    else window.TP.hide();
+  }
 
   // Restore species panel layer state based on the last active theme.
   // applyPanelLayers always adds speciesHexLayer (the panel default), so we need

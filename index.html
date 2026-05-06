@@ -255,6 +255,44 @@
   </div>
 
   <!-- =====================================================
+       TERRAIN CROSS-SECTION EXPLORER
+       Shown on overview (Páramos) panel only.
+       #terrain-crosshair — draggable gold line across map
+       #terrain-profile-panel — elevation profile at bottom
+  ===================================================== -->
+  <div id="terrain-explorer" class="hidden">
+
+    <!-- Draggable horizontal crosshair -->
+    <div id="terrain-crosshair">
+      <div id="terrain-crosshair-line"></div>
+      <div id="terrain-crosshair-handle">
+        <!-- Vertical arrows icon -->
+        <svg class="crosshair-handle-icon" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 1v10M3 4l3-3 3 3M3 8l3 3 3-3" stroke="#C8A96B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span id="terrain-crosshair-lat">5.20°N</span>
+      </div>
+    </div>
+
+    <!-- Elevation profile panel -->
+    <div id="terrain-profile-panel">
+      <div id="terrain-profile-header">
+        <div class="tp-header-left">
+          <span id="terrain-profile-title">Elevation Cross-Section</span>
+          <span class="tp-sep">·</span>
+          <span class="tp-lat-readout" id="tp-lat-readout">5.20°N</span>
+        </div>
+        <button id="terrain-profile-close" title="Hide terrain profile">×</button>
+      </div>
+      <div id="terrain-profile-svg-wrap">
+        <svg id="terrain-profile-svg" aria-label="Terrain elevation profile"></svg>
+        <div id="terrain-profile-loading" class="hidden">Sampling elevation…</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- =====================================================
        SPECIES MODAL (over everything)
   ===================================================== -->
   <div id="species-modal" class="modal-overlay">
@@ -274,6 +312,7 @@
 <script src="js/species.js" defer></script>
 <script src="js/charts.js" defer></script>
 <script src="js/timeslider.js" defer></script>
+<script src="js/terrain-profile.js" defer></script>
 
 </body>
 </html>
