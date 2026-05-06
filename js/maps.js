@@ -215,6 +215,9 @@ let currentPeriod = 'all';
 // Active theme for the species hex layer — 'points' is default (shows GBIF occurrence points)
 let activeSpeciesTheme = 'points';
 
+// Track which panel is active so GBIF points never bleed onto non-species panels
+let activePanel = 'overview';
+
 // GBIF points runtime state
 let gbifHeatLayer         = null;   // L.heatLayer instance (zoom-out view)
 let _gbifKingdomFilter    = null;   // "Animalia" | "Plantae" | null
@@ -927,8 +930,12 @@ function buildGbifWhere() {
 // Heat-map zoom-out was disabled: the heatmap service query does not reliably return
 // parseable point geometries, so points are shown at all zoom levels instead.
 function updateGbifLayersByZoom() {
-  if (activeSpeciesTheme !== 'points') return;
-  // Remove heat layer if it was ever added, then ensure points are on the map
+  // Only show points when the species panel is active AND points theme is selected
+  if (activeSpeciesTheme !== 'points' || activePanel !== 'species') {
+    if (gbifHeatLayer && map.hasLayer(gbifHeatLayer)) map.removeLayer(gbifHeatLayer);
+    if (LG.gbifPointsLayer && map.hasLayer(LG.gbifPointsLayer)) map.removeLayer(LG.gbifPointsLayer);
+    return;
+  }
   if (gbifHeatLayer && map.hasLayer(gbifHeatLayer)) map.removeLayer(gbifHeatLayer);
   if (LG.gbifPointsLayer && !map.hasLayer(LG.gbifPointsLayer)) LG.gbifPointsLayer.addTo(map);
 }
@@ -1354,6 +1361,13 @@ window.setBasemapOpacity = function(key, opacity) {
 // ============================================================
 
 window.onPanelChange = function(panelId) {
+  // Strip GBIF points immediately when leaving the species panel
+  if (activePanel === 'species' && panelId !== 'species') {
+    if (LG.gbifPointsLayer && map.hasLayer(LG.gbifPointsLayer)) map.removeLayer(LG.gbifPointsLayer);
+    if (gbifHeatLayer && map.hasLayer(gbifHeatLayer)) map.removeLayer(gbifHeatLayer);
+  }
+  activePanel = panelId;
+
   applyPanelLayers(panelId);
 
   // Show terrain cross-section explorer on overview panel, hide on others
