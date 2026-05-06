@@ -370,25 +370,45 @@ window.initSpeciesPanel = function() {
   });
 
   // ── Wire map theme selector buttons ────────────────────────
-  // Determine which theme was last active (preserved across panel switches)
   const currentTheme = window._activeSpeciesTheme || 'richness';
 
   const themeButtons = document.querySelectorAll('.theme-btn');
   themeButtons.forEach(btn => {
-    // Restore active state on the correct button
     btn.classList.toggle('active', btn.dataset.theme === currentTheme);
 
     btn.addEventListener('click', () => {
       const theme = btn.dataset.theme;
       themeButtons.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-
-      // Store so re-opening the panel restores selection
       window._activeSpeciesTheme = theme;
 
-      // Re-style the map layer and update the legend
+      // Show / hide the Animal|Plant sub-filter
+      const ptsFilter = document.getElementById('species-points-filter');
+      if (ptsFilter) ptsFilter.classList.toggle('hidden', theme !== 'points');
+
+      // Reset sub-filter to "All" whenever theme changes
+      if (theme !== 'points') {
+        document.querySelectorAll('.pts-btn').forEach(b => b.classList.toggle('active', !b.dataset.kingdom));
+      }
+
       if (typeof window.switchSpeciesTheme === 'function') {
         window.switchSpeciesTheme(theme);
+      }
+    });
+  });
+
+  // ── Restore sub-filter visibility on panel re-render ───────
+  const ptsFilter = document.getElementById('species-points-filter');
+  if (ptsFilter) ptsFilter.classList.toggle('hidden', currentTheme !== 'points');
+
+  // ── Wire Animal / Plant sub-filter buttons ─────────────────
+  const ptsBtns = document.querySelectorAll('.pts-btn');
+  ptsBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      ptsBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (typeof window.filterGbifPoints === 'function') {
+        window.filterGbifPoints(btn.dataset.kingdom || null);
       }
     });
   });
@@ -405,6 +425,27 @@ window.renderSpeciesHexLegend = function(themeName) {
   const container = document.getElementById('species-hex-legend');
   if (!container) return;
 
+  // ── Species Points theme: show kingdom colour swatches ─────
+  if (themeName === 'points') {
+    container.innerHTML = `
+      <div class="hex-legend-unique">
+        <div class="hex-legend-item">
+          <span class="hex-legend-swatch" style="background:#E67E22;"></span>
+          <span class="hex-legend-label">Animals (Animalia)</span>
+        </div>
+        <div class="hex-legend-item">
+          <span class="hex-legend-swatch" style="background:#27AE60;"></span>
+          <span class="hex-legend-label">Plants (Plantae)</span>
+        </div>
+        <div class="hex-legend-item">
+          <span class="hex-legend-swatch" style="background:#9AA5B4;border:1px solid rgba(0,0,0,0.12);"></span>
+          <span class="hex-legend-label">Other kingdoms</span>
+        </div>
+      </div>`;
+    return;
+  }
+
+  // ── Hex themes: read from maps.js config ───────────────────
   const themes = window.SPECIES_HEX_THEMES;
   if (!themes) { container.innerHTML = ''; return; }
 
@@ -429,6 +470,10 @@ window.renderSpeciesHexLegend = function(themeName) {
             <span class="hex-legend-swatch" style="background:${color};"></span>
             <span class="hex-legend-label">${label}</span>
           </div>`).join('')}
+        <div class="hex-legend-item">
+          <span class="hex-legend-swatch" style="background:#CBD5E0;border:1px solid rgba(0,0,0,0.1);"></span>
+          <span class="hex-legend-label">No data</span>
+        </div>
       </div>`;
   }
 };

@@ -788,6 +788,59 @@ a:hover { color: var(--primary); text-decoration: underline; }
   border-color: var(--primary);
 }
 
+/* Generic hidden utility (JS toggles .hidden to show/hide sub-sections) */
+.hidden { display: none !important; }
+
+/* Animal / Plant sub-filter — shown only when "Species Points" theme is active */
+.species-points-filter {
+  margin-bottom: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid rgba(0,0,0,0.07);
+}
+
+.points-filter-btns {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.pts-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.73rem;
+  font-weight: 500;
+  border: 1.5px solid rgba(0,0,0,0.14);
+  color: var(--text-medium);
+  background: white;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, color 0.18s;
+  white-space: nowrap;
+}
+
+.pts-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-pale);
+}
+
+.pts-btn.active {
+  background: var(--text-dark);
+  color: white;
+  border-color: var(--text-dark);
+}
+
+/* Tiny circle swatch inside the pts-btn */
+.pts-swatch {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
 /* Legend container — fades in when theme changes */
 .species-hex-legend {
   transition: opacity 0.22s ease;

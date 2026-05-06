@@ -20,44 +20,53 @@ const PARAMO_SPECIES_LAYER_URL = 'https://services1.arcgis.com/ZIL9uO234SBBPGL7/
 
 // Theme configs — shared between the style function (maps.js) and the legend renderer (species.js).
 // Exposed as window.SPECIES_HEX_THEMES so species.js can read them without duplication.
+//
+// Hex layer confirmed field names (from FeatureServer schema):
+//   species_richness  — Integer, max ≈ 10  (Jenks 7-class, YlGnBu ramp)
+//   total_records     — Integer, max ≈ 921 (Manual interval 7-class, Purples ramp)
+//   decade_period     — String  (Unique Values: "Before 1980" | "1980-1999" | "2000-2010" |
+//                                "2011-2020" | "2021-Present" | "Unknown" | null)
 const SPECIES_HEX_THEMES = {
   richness: {
     field:  'species_richness',
     title:  'Species Richness',
     type:   'breaks',
-    // Upper bound of each class (last class = Infinity → catches everything above)
-    breaks: [5, 15, 30, 50, Infinity],
-    colors: ['#EDF8FB', '#B2E2E2', '#66C2A4', '#2CA25F', '#006D2C'],
-    labels: ['1 – 5', '6 – 15', '16 – 30', '31 – 50', '51 +'],
+    // Natural Breaks (Jenks) 7 classes matching ArcGIS Pro symbology
+    breaks: [0, 1, 2, 4, 6, 8, Infinity],
+    colors: ['#FFFFCC', '#C7E9B4', '#7FCDBB', '#41B6C4', '#2C7FB8', '#253494', '#081D58'],
+    labels: ['0', '1', '2', '3 – 4', '5 – 6', '7 – 8', '9 – 10'],
   },
   count: {
-    field:  'record_count',
+    field:  'total_records',          // confirmed field name
     title:  'Observation Count',
     type:   'breaks',
-    breaks: [10, 50, 150, 500, Infinity],
-    colors: ['#FFFFD4', '#FED98E', '#FE9929', '#D95F0E', '#993404'],
-    labels: ['1 – 10', '11 – 50', '51 – 150', '151 – 500', '500 +'],
+    // Manual Interval 7 classes (max 921) matching ArcGIS Pro histogram
+    breaks: [10, 50, 100, 200, 500, 600, Infinity],
+    colors: ['#F2F0F7', '#DADAEB', '#BCBDDC', '#9E9AC8', '#756BB1', '#54278F', '#3F007D'],
+    labels: ['1 – 10', '11 – 50', '51 – 100', '101 – 200', '201 – 500', '501 – 600', '600 +'],
   },
   decade: {
     field:   'decade_period',
     title:   'Observation Decade',
     type:    'unique',
-    // Covers likely decade string values; fallback handles anything unrecognised
+    // Exact values from FeatureServer domain — aligned with site ERA_COLORS palette
     values: {
-      '1940s': '#A78BFA',
-      '1950s': '#7C3AED',
-      '1960s': '#5B2C8D',
-      '1970s': '#2874A6',
-      '1980s': '#1565C0',
-      '1990s': '#148F77',
-      '2000s': '#E67E22',
-      '2010s': '#D35400',
-      '2020s': '#27AE60',
+      'Before 1980':  '#5B2C8D',
+      '1980-1999':    '#2874A6',
+      '2000-2010':    '#148F77',
+      '2011-2020':    '#E67E22',
+      '2021-Present': '#27AE60',
+      'Unknown':      '#9AA5B4',
     },
-    fallback: '#9AA5B4',
+    fallback: '#CBD5E0',   // null / unrecognised values
   },
 };
 window.SPECIES_HEX_THEMES = SPECIES_HEX_THEMES;  // expose to species.js
+
+// ---- GBIF occurrence points — animals & plants ----
+// Field `kingdom` (String) distinguishes kingdoms: "Animalia" | "Plantae"
+// Sub-filter uses L.esri.featureLayer.setWhere() — no extra network requests.
+const GBIF_POINTS_URL = 'https://services1.arcgis.com/ZIL9uO234SBBPGL7/arcgis/rest/services/GbifPoints_AnimalPlant/FeatureServer/0';
 
 // ---- CUSTOM BASEMAP LAYERS ----
 // 1. Colombia terrain raster — ArcGIS MapServer (tiled)
@@ -166,7 +175,8 @@ function syncAllGL() {
 const LG = {
   paramoFill:      null,
   paramoOutline:   null,
-  speciesHexLayer: null,   // NEW — aggregated species hex (richness / count / decade)
+  speciesHexLayer: null,   // aggregated hex — richness / count / decade themes
+  gbifPointsLayer: null,   // GBIF occurrence points — shown when 'points' theme is active
   speciesPoints:   null,
   agriculture:     null,
   fire:            null,
@@ -567,7 +577,8 @@ async function loadAllData() {
   // in the local data fetch can never take them down.
   buildParamoFill();
   buildParamoOutline();
-  buildSpeciesHexLayer();   // loads from ArcGIS server — independent of local GeoJSON
+  buildSpeciesHexLayer();    // aggregated hex — independent of local GeoJSON
+  buildGbifPointsLayer();    // GBIF occurrence points — managed by theme switcher
   applyPanelLayers('overview');
 
   // ── Local GeoJSON data (species, land cover, fire, urgency) ──
@@ -748,17 +759,100 @@ function buildSpeciesHexLayer() {
   });
 }
 
-// Called by the sidebar theme selector (wired in species.js).
-// Re-styles the existing layer in-place — no new network request.
-window.switchSpeciesTheme = function(themeName) {
-  if (!SPECIES_HEX_THEMES[themeName]) return;
-  activeSpeciesTheme = themeName;
+// ============================================================
+// GBIF OCCURRENCE POINTS — animals & plants
+// Colored by `kingdom` field; sub-filtered via setWhere().
+// Only added to the map when the 'points' theme is active.
+// ============================================================
 
-  if (LG.speciesHexLayer) {
-    LG.speciesHexLayer.setStyle(feature => getSpeciesHexStyle(themeName, feature));
+// Kingdom → fill colour (aligned with site Flora/Fauna palette)
+function getGbifPointColor(kingdom) {
+  const k = (kingdom || '').toLowerCase();
+  if (k.startsWith('anim')) return '#E67E22';   // Animalia → amber
+  if (k.startsWith('plant') || k.startsWith('virid')) return '#27AE60';  // Plantae → green
+  return '#9AA5B4';   // fungi, chromista, etc.
+}
+
+function buildGbifPointPopup(p) {
+  const name    = p.scientificName || p.species || '—';
+  const kingdom = p.kingdom || '—';
+  const decade  = p.decade_period  || '—';
+  const year    = p.year           ? String(p.year) : '—';
+  const family  = p.family         || '—';
+  const color   = getGbifPointColor(p.kingdom);
+  return `
+    <div style="font-family:Helvetica Neue,Helvetica,Arial,sans-serif;padding:10px 13px;min-width:200px;">
+      <p style="margin:0 0 6px;font-style:italic;font-size:13px;font-weight:700;color:${color};">${name}</p>
+      <table style="width:100%;font-size:11px;border-collapse:collapse;">
+        <tr><td style="color:#888;padding:2px 0">Kingdom</td><td style="font-weight:600;text-align:right">${kingdom}</td></tr>
+        <tr><td style="color:#888;padding:2px 0">Family</td><td style="font-weight:600;text-align:right">${family}</td></tr>
+        <tr><td style="color:#888;padding:2px 0">Year</td><td style="font-weight:600;text-align:right">${year}</td></tr>
+        <tr><td style="color:#888;padding:2px 0">Decade</td><td style="font-weight:600;text-align:right">${decade}</td></tr>
+      </table>
+    </div>`;
+}
+
+function buildGbifPointsLayer() {
+  if (LG.gbifPointsLayer) { map.removeLayer(LG.gbifPointsLayer); }
+
+  LG.gbifPointsLayer = L.esri.featureLayer({
+    url: GBIF_POINTS_URL,
+    pointToLayer(feature, latlng) {
+      const color = getGbifPointColor(feature.properties?.kingdom);
+      return L.circleMarker(latlng, {
+        radius:      5,
+        fillColor:   color,
+        color:       'rgba(255,255,255,0.55)',
+        weight:      0.8,
+        fillOpacity: 0.78,
+        opacity:     1,
+      });
+    },
+    onEachFeature(feature, layer) {
+      layer.bindPopup(buildGbifPointPopup(feature.properties || {}), { maxWidth: 260 });
+      layer.on('mouseover', function() { this.setStyle({ fillOpacity: 1, weight: 1.5 }); });
+      layer.on('mouseout',  function() { this.setStyle({ fillOpacity: 0.78, weight: 0.8 }); });
+    },
+  });
+  // gbifPointsLayer is NOT added to map here — switchSpeciesTheme manages visibility
+}
+
+// Filter GBIF points by kingdom ("Animalia" | "Plantae" | null = all).
+// Called by sub-filter buttons in the species sidebar.
+window.filterGbifPoints = function(kingdom) {
+  if (!LG.gbifPointsLayer) return;
+  const where = kingdom ? `kingdom = '${kingdom}'` : '1=1';
+  LG.gbifPointsLayer.setWhere(where);
+};
+
+// Called by the sidebar theme selector (wired in species.js).
+// Switches between the hex layer (3 themes) and the GBIF points layer.
+window.switchSpeciesTheme = function(themeName) {
+  activeSpeciesTheme = themeName;
+  window._activeSpeciesTheme = themeName;   // persist across panel re-renders
+
+  if (themeName === 'points') {
+    // Hide hex, show GBIF points
+    if (LG.speciesHexLayer && map.hasLayer(LG.speciesHexLayer)) {
+      map.removeLayer(LG.speciesHexLayer);
+    }
+    if (LG.gbifPointsLayer && !map.hasLayer(LG.gbifPointsLayer)) {
+      LG.gbifPointsLayer.addTo(map);
+    }
+  } else {
+    // Hide GBIF points, show (or re-style) hex layer
+    if (LG.gbifPointsLayer && map.hasLayer(LG.gbifPointsLayer)) {
+      map.removeLayer(LG.gbifPointsLayer);
+    }
+    if (LG.speciesHexLayer) {
+      if (!map.hasLayer(LG.speciesHexLayer)) LG.speciesHexLayer.addTo(map);
+      if (SPECIES_HEX_THEMES[themeName]) {
+        LG.speciesHexLayer.setStyle(feature => getSpeciesHexStyle(themeName, feature));
+      }
+    }
   }
 
-  // Update the legend rendered inside the species sidebar
+  // Refresh the legend in the sidebar
   if (typeof window.renderSpeciesHexLegend === 'function') {
     window.renderSpeciesHexLegend(themeName);
   }
@@ -1071,6 +1165,26 @@ window.setBasemapOpacity = function(key, opacity) {
 
 window.onPanelChange = function(panelId) {
   applyPanelLayers(panelId);
+
+  // Restore species panel layer state based on the last active theme.
+  // applyPanelLayers always adds speciesHexLayer (the panel default), so we need
+  // to correct it when the user had previously switched to the points view.
+  if (panelId === 'species') {
+    const theme = activeSpeciesTheme || 'richness';
+    if (theme === 'points') {
+      if (LG.speciesHexLayer && map.hasLayer(LG.speciesHexLayer)) {
+        map.removeLayer(LG.speciesHexLayer);
+      }
+      if (LG.gbifPointsLayer && !map.hasLayer(LG.gbifPointsLayer)) {
+        LG.gbifPointsLayer.addTo(map);
+      }
+    } else {
+      // Make sure GBIF points are off
+      if (LG.gbifPointsLayer && map.hasLayer(LG.gbifPointsLayer)) {
+        map.removeLayer(LG.gbifPointsLayer);
+      }
+    }
+  }
 
   // Threats panel: re-wire checkboxes after content injection
   if (panelId === 'threats') {

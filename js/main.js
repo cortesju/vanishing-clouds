@@ -72,6 +72,20 @@ const PANEL_TEMPLATES = {
           <button class="theme-btn active" data-theme="richness">Species Richness</button>
           <button class="theme-btn"        data-theme="count">Record Count</button>
           <button class="theme-btn"        data-theme="decade">Decade</button>
+          <button class="theme-btn"        data-theme="points">Species Points</button>
+        </div>
+        <!-- Sub-filter shown only when Species Points theme is active -->
+        <div id="species-points-filter" class="species-points-filter hidden">
+          <span class="species-section-label" style="margin-bottom:0.4rem">FILTER BY</span>
+          <div class="points-filter-btns">
+            <button class="pts-btn active" data-kingdom="">All</button>
+            <button class="pts-btn" data-kingdom="Animalia">
+              <span class="pts-swatch" style="background:#E67E22"></span>Animals
+            </button>
+            <button class="pts-btn" data-kingdom="Plantae">
+              <span class="pts-swatch" style="background:#27AE60"></span>Plants
+            </button>
+          </div>
         </div>
         <div id="species-hex-legend" class="species-hex-legend"></div>
       </div>
