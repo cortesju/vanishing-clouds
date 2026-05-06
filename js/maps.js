@@ -600,7 +600,6 @@ async function loadAllData() {
   buildParamoOutline();
   buildSpeciesHexLayer();    // aggregated hex — independent of local GeoJSON
   buildGbifPointsLayer();    // GBIF occurrence points — managed by theme switcher
-  initGbifHeatLayer();       // pre-warm heat layer (data loaded lazily on demand)
   applyPanelLayers('overview');
 
   // ── Local GeoJSON data (species, land cover, fire, urgency) ──
@@ -910,18 +909,14 @@ function buildGbifWhere() {
   return kingdom || decade;
 }
 
-// Show heat or points based on current map zoom — called on zoom + theme switch
+// Show GBIF points when the 'points' theme is active — called on zoom + theme switch.
+// Heat-map zoom-out was disabled: the heatmap service query does not reliably return
+// parseable point geometries, so points are shown at all zoom levels instead.
 function updateGbifLayersByZoom() {
   if (activeSpeciesTheme !== 'points') return;
-  const zoomIn = map.getZoom() >= POINTS_MIN_ZOOM;
-  if (zoomIn) {
-    if (gbifHeatLayer && map.hasLayer(gbifHeatLayer)) map.removeLayer(gbifHeatLayer);
-    if (LG.gbifPointsLayer && !map.hasLayer(LG.gbifPointsLayer)) LG.gbifPointsLayer.addTo(map);
-  } else {
-    if (LG.gbifPointsLayer && map.hasLayer(LG.gbifPointsLayer)) map.removeLayer(LG.gbifPointsLayer);
-    if (!gbifHeatLayer) initGbifHeatLayer();
-    if (gbifHeatLayer && !map.hasLayer(gbifHeatLayer)) gbifHeatLayer.addTo(map);
-  }
+  // Remove heat layer if it was ever added, then ensure points are on the map
+  if (gbifHeatLayer && map.hasLayer(gbifHeatLayer)) map.removeLayer(gbifHeatLayer);
+  if (LG.gbifPointsLayer && !map.hasLayer(LG.gbifPointsLayer)) LG.gbifPointsLayer.addTo(map);
 }
 
 // ── Public API ────────────────────────────────────────────────
