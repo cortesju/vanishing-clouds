@@ -6,8 +6,9 @@
 
 // ---- CONFIG ----
 const COLOMBIA_BOUNDS   = [[-4.2, -79.0], [12.5, -66.9]];
-const COLOMBIA_CENTER   = [5.2, -73.0];   // Andes corridor as visual focal point
-const DEFAULT_ZOOM      = 7;              // slightly closer — Andean belt fills the viewport
+const COLOMBIA_CENTER   = [5.0, -75.5];   // offset west to compensate for 420px left sidebar —
+                                           // the three Andes cordilleras land in the open map area
+const DEFAULT_ZOOM      = 7;              // country-close — Andean belt fills the visible viewport
 const MIN_ZOOM          = 3;              // zoom-out limit: shows all Colombia
 const MAX_ZOOM          = 9;             // zoom-in limit: ~20 miles on a 1080p monitor (23 mi full-screen)
 

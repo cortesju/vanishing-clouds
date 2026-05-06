@@ -89,6 +89,7 @@
   function showExplorer() {
     if (!explorerEl) return;
     explorerEl.classList.remove('hidden');
+    document.body.classList.add('terrain-active');    // shorten sidebar via CSS
     _visible = true;
     positionCrosshairAtLat(crosshairLat);
     scheduleSample();
@@ -97,6 +98,7 @@
   function hideExplorer() {
     if (!explorerEl) return;
     explorerEl.classList.add('hidden');
+    document.body.classList.remove('terrain-active'); // restore sidebar height
     _visible = false;
     cancelSample();
   }
@@ -426,15 +428,16 @@
 
     // ── Gradient defs ──
     const defs = el('defs', {}, svgEl);
+    // Terrain: muted sage-gray on light background
     const grad = el('linearGradient', { id: 'tp-terrain-grad', x1: '0', y1: '0', x2: '0', y2: '1' }, defs);
-    el('stop', { offset: '0%',   'stop-color': '#5a6470', 'stop-opacity': '1' }, grad);
-    el('stop', { offset: '60%',  'stop-color': '#2c333a', 'stop-opacity': '1' }, grad);
-    el('stop', { offset: '100%', 'stop-color': '#151a1f', 'stop-opacity': '1' }, grad);
+    el('stop', { offset: '0%',   'stop-color': 'rgba(92,108,90,0.42)'  }, grad);
+    el('stop', { offset: '55%',  'stop-color': 'rgba(78,94,76,0.28)'   }, grad);
+    el('stop', { offset: '100%', 'stop-color': 'rgba(60,76,60,0.14)'   }, grad);
 
-    // Páramo gold gradient
+    // Páramo gold gradient — richer at peak, fades toward base
     const pGrad = el('linearGradient', { id: 'tp-paramo-grad', x1: '0', y1: '0', x2: '0', y2: '1' }, defs);
-    el('stop', { offset: '0%',   'stop-color': PARAMO_GOLD, 'stop-opacity': '0.75' }, pGrad);
-    el('stop', { offset: '100%', 'stop-color': PARAMO_GOLD, 'stop-opacity': '0.20' }, pGrad);
+    el('stop', { offset: '0%',   'stop-color': PARAMO_GOLD, 'stop-opacity': '0.55' }, pGrad);
+    el('stop', { offset: '100%', 'stop-color': PARAMO_GOLD, 'stop-opacity': '0.12' }, pGrad);
 
     // ── Grid lines + y-axis labels ──
     const elevTicks = [500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500];
@@ -446,15 +449,15 @@
       // Grid
       el('line', {
         x1: PL, y1: ty, x2: PL + CW, y2: ty,
-        stroke: 'rgba(255,255,255,0.055)', 'stroke-width': '1',
+        stroke: 'rgba(90,110,90,0.13)', 'stroke-width': '1',
       }, svgEl);
 
-      // Label (every 1000m, or 500m if space allows)
+      // Label (every 1000m)
       if (tick % 1000 === 0) {
         el('text', {
           x: PL - 4, y: ty + 3.5,
           'text-anchor': 'end',
-          fill: 'rgba(180,190,200,0.55)',
+          fill: 'rgba(70,90,70,0.60)',
           'font-size': '8.5',
           'font-family': 'Courier New, monospace',
         }, svgEl).textContent = (tick / 1000).toFixed(0) + 'k';
@@ -466,15 +469,15 @@
     if (threshY > PT && threshY < baseY) {
       el('line', {
         x1: PL, y1: threshY, x2: PL + CW, y2: threshY,
-        stroke: PARAMO_GOLD, 'stroke-width': '1',
-        'stroke-dasharray': '4 3', opacity: '0.45',
+        stroke: '#A07828', 'stroke-width': '1',
+        'stroke-dasharray': '4 3', opacity: '0.50',
       }, svgEl);
       el('text', {
         x: PL + CW - 3, y: threshY - 3,
         'text-anchor': 'end',
-        fill: PARAMO_GOLD, 'font-size': '7.5',
+        fill: '#8B6820', 'font-size': '7.5',
         'font-family': 'Helvetica Neue, sans-serif',
-        opacity: '0.7',
+        opacity: '0.75',
       }, svgEl).textContent = 'páramo';
     }
 
@@ -515,7 +518,7 @@
     el('path', {
       d: pathD,
       fill: 'url(#tp-terrain-grad)',
-      stroke: 'rgba(140,155,170,0.55)',
+      stroke: 'rgba(80,96,80,0.60)',
       'stroke-width': '1',
       'stroke-linejoin': 'round',
     }, svgEl);
@@ -546,33 +549,33 @@
       // Short vertical tick at bottom
       el('line', {
         x1: cx, y1: baseY, x2: cx, y2: baseY + 4,
-        stroke: 'rgba(180,190,200,0.35)', 'stroke-width': '1',
+        stroke: 'rgba(80,100,80,0.30)', 'stroke-width': '1',
       }, svgEl);
 
       el('text', {
         x: cx, y: baseY + 13,
         'text-anchor': 'middle',
-        fill: 'rgba(170,185,200,0.45)',
+        fill: 'rgba(70,90,70,0.50)',
         'font-size': '7',
         'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
         'letter-spacing': '0.5',
       }, svgEl).textContent = label;
     }
 
-    // ── Legend dot for páramo ──
+    // ── Legend chip for páramo ──
     if (paramoSegs.length > 0) {
       const lgX = PL + 4;
       const lgY = PT + 8;
       el('rect', {
-        x: lgX, y: lgY - 5, width: 8, height: 5,
-        fill: PARAMO_GOLD, opacity: '0.7', rx: '1',
+        x: lgX, y: lgY - 5, width: 9, height: 5,
+        fill: PARAMO_GOLD, opacity: '0.65', rx: '1',
       }, svgEl);
       el('text', {
-        x: lgX + 11, y: lgY,
-        fill: 'rgba(200,169,107,0.7)',
+        x: lgX + 12, y: lgY,
+        fill: 'rgba(130,96,28,0.75)',
         'font-size': '7.5',
         'font-family': 'Helvetica Neue, sans-serif',
-      }, svgEl).textContent = 'Páramo';
+      }, svgEl).textContent = 'Páramo zone';
     }
   }
 

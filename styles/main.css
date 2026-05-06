@@ -22,6 +22,8 @@
   --fog-blur:       blur(22px) saturate(1.35);
   --nav-h:          56px;
   --panel-w:        420px;
+  --profile-h:      142px;   /* terrain cross-section panel height */
+  --data-strip-h:   32px;    /* #data-strip height */
   --shadow-sm:      0 1px 8px rgba(0, 0, 0, 0.08);
   --shadow-md:      0 4px 20px rgba(0, 0, 0, 0.12);
   --shadow-lg:      0 8px 40px rgba(0, 0, 0, 0.18);
@@ -340,6 +342,7 @@ a:hover { color: var(--primary); text-decoration: underline; }
   top: var(--nav-h);
   left: 0;
   width: var(--panel-w);
+  /* Default: runs to bottom edge (non-overview panels) */
   height: calc(100vh - var(--nav-h));
   background: var(--panel-bg);
   backdrop-filter: var(--fog-blur);
@@ -350,8 +353,14 @@ a:hover { color: var(--primary); text-decoration: underline; }
   box-shadow: 4px 0 32px rgba(255, 255, 255, 0.25), 3px 0 24px rgba(0, 0, 0, 0.08);
   border-right: 1px solid rgba(255, 255, 255, 0.55);
   transform: translateX(0);
-  transition: transform var(--transition);
+  transition: transform var(--transition), height var(--transition);
   will-change: transform;
+}
+
+/* When terrain cross-section is visible (overview panel), shorten sidebar
+   so the profile panel shows fully beneath it */
+body.terrain-active #side-panel {
+  height: calc(100vh - var(--nav-h) - var(--profile-h) - var(--data-strip-h));
 }
 
 #side-panel.collapsed {
@@ -2307,14 +2316,16 @@ a:hover { color: var(--primary); text-decoration: underline; }
 /* ── Profile panel — scientific elevation cross-section ── */
 #terrain-profile-panel {
   position: absolute;
-  bottom: 32px;          /* sit flush above #data-strip */
+  bottom: var(--data-strip-h);   /* sit flush above #data-strip */
   left: 0;
   right: 0;
-  height: 158px;
-  background: rgba(10,14,18,0.91);
-  backdrop-filter: blur(16px) saturate(1.15);
-  -webkit-backdrop-filter: blur(16px) saturate(1.15);
-  border-top: 1px solid rgba(200,169,107,0.22);
+  height: var(--profile-h);
+  /* Pale green-cream — matches the site's Audubon palette */
+  background: rgba(245, 248, 242, 0.94);
+  backdrop-filter: blur(18px) saturate(1.25);
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+  border-top: 1px solid rgba(190,170,100,0.30);
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.07);
   pointer-events: all;
   display: flex;
   flex-direction: column;
@@ -2322,7 +2333,7 @@ a:hover { color: var(--primary); text-decoration: underline; }
 }
 
 #terrain-profile-panel.tp-loading {
-  opacity: 0.6;
+  opacity: 0.65;
 }
 
 /* Header */
@@ -2331,7 +2342,7 @@ a:hover { color: var(--primary); text-decoration: underline; }
   align-items: center;
   justify-content: space-between;
   padding: 5px 14px 4px;
-  border-bottom: 1px solid rgba(255,255,255,0.055);
+  border-bottom: 1px solid rgba(90,110,90,0.10);
   flex-shrink: 0;
 }
 
@@ -2344,27 +2355,28 @@ a:hover { color: var(--primary); text-decoration: underline; }
 #terrain-profile-title {
   font-size: 0.66rem;
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
-  color: rgba(200,210,220,0.65);
+  color: var(--text-medium);
+  opacity: 0.75;
 }
 
 .tp-sep {
-  color: rgba(200,210,220,0.25);
+  color: rgba(90,110,90,0.30);
   font-size: 0.7rem;
 }
 
 .tp-lat-readout {
   font-size: 0.68rem;
   font-family: 'Courier New', Courier, monospace;
-  color: rgba(200,169,107,0.85);
+  color: #8B7035;   /* darker gold — readable on light background */
   letter-spacing: 0.04em;
 }
 
 #terrain-profile-close {
   background: none;
   border: none;
-  color: rgba(200,210,220,0.35);
+  color: rgba(74,85,104,0.35);
   font-size: 1.15rem;
   line-height: 1;
   cursor: pointer;
@@ -2372,7 +2384,7 @@ a:hover { color: var(--primary); text-decoration: underline; }
   transition: color 0.15s;
 }
 #terrain-profile-close:hover {
-  color: rgba(200,210,220,0.85);
+  color: rgba(74,85,104,0.80);
 }
 
 /* SVG canvas area */
@@ -2399,9 +2411,9 @@ a:hover { color: var(--primary); text-decoration: underline; }
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(200,169,107,0.55);
+  color: rgba(139,112,53,0.65);
   pointer-events: none;
-  background: rgba(10,14,18,0.45);
+  background: rgba(245,248,242,0.55);
 }
 
 #terrain-profile-loading.hidden {
