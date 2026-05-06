@@ -216,7 +216,8 @@ let currentPeriod = 'all';
 let activeSpeciesTheme = 'points';
 
 // Track which panel is active so GBIF points never bleed onto non-species panels
-let activePanel = 'overview';
+// (named _mapActivePanel to avoid collision with main.js's own activePanel variable)
+let _mapActivePanel = 'overview';
 
 // GBIF points runtime state
 let gbifHeatLayer         = null;   // L.heatLayer instance (zoom-out view)
@@ -931,7 +932,7 @@ function buildGbifWhere() {
 // parseable point geometries, so points are shown at all zoom levels instead.
 function updateGbifLayersByZoom() {
   // Only show points when the species panel is active AND points theme is selected
-  if (activeSpeciesTheme !== 'points' || activePanel !== 'species') {
+  if (activeSpeciesTheme !== 'points' || _mapActivePanel !== 'species') {
     if (gbifHeatLayer && map.hasLayer(gbifHeatLayer)) map.removeLayer(gbifHeatLayer);
     if (LG.gbifPointsLayer && map.hasLayer(LG.gbifPointsLayer)) map.removeLayer(LG.gbifPointsLayer);
     return;
@@ -1362,11 +1363,11 @@ window.setBasemapOpacity = function(key, opacity) {
 
 window.onPanelChange = function(panelId) {
   // Strip GBIF points immediately when leaving the species panel
-  if (activePanel === 'species' && panelId !== 'species') {
+  if (_mapActivePanel === 'species' && panelId !== 'species') {
     if (LG.gbifPointsLayer && map.hasLayer(LG.gbifPointsLayer)) map.removeLayer(LG.gbifPointsLayer);
     if (gbifHeatLayer && map.hasLayer(gbifHeatLayer)) map.removeLayer(gbifHeatLayer);
   }
-  activePanel = panelId;
+  _mapActivePanel = panelId;
 
   applyPanelLayers(panelId);
 
