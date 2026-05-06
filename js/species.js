@@ -358,7 +358,8 @@ window.initSpeciesPanel = function() {
   if (allSpecies.length > 0) {
     renderSpeciesGrid(allSpecies);
   }
-  // Re-wire filter buttons (they're freshly injected into DOM)
+
+  // ── Re-wire species card filter buttons ────────────────────
   const filterButtons = document.querySelectorAll('.filter-btn');
   filterButtons.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -367,6 +368,69 @@ window.initSpeciesPanel = function() {
       filterSpecies(btn.dataset.filter || 'all');
     });
   });
+
+  // ── Wire map theme selector buttons ────────────────────────
+  // Determine which theme was last active (preserved across panel switches)
+  const currentTheme = window._activeSpeciesTheme || 'richness';
+
+  const themeButtons = document.querySelectorAll('.theme-btn');
+  themeButtons.forEach(btn => {
+    // Restore active state on the correct button
+    btn.classList.toggle('active', btn.dataset.theme === currentTheme);
+
+    btn.addEventListener('click', () => {
+      const theme = btn.dataset.theme;
+      themeButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      // Store so re-opening the panel restores selection
+      window._activeSpeciesTheme = theme;
+
+      // Re-style the map layer and update the legend
+      if (typeof window.switchSpeciesTheme === 'function') {
+        window.switchSpeciesTheme(theme);
+      }
+    });
+  });
+
+  // Render the legend for the current theme
+  window.renderSpeciesHexLegend(currentTheme);
+};
+
+// ============================================================
+// renderSpeciesHexLegend — draws the colour legend for a given theme.
+// Reads config from window.SPECIES_HEX_THEMES (set in maps.js).
+// ============================================================
+window.renderSpeciesHexLegend = function(themeName) {
+  const container = document.getElementById('species-hex-legend');
+  if (!container) return;
+
+  const themes = window.SPECIES_HEX_THEMES;
+  if (!themes) { container.innerHTML = ''; return; }
+
+  const theme = themes[themeName];
+  if (!theme) { container.innerHTML = ''; return; }
+
+  if (theme.type === 'breaks') {
+    container.innerHTML = `
+      <div class="hex-legend-ramp">
+        ${theme.colors.map((color, i) => `
+          <div class="hex-legend-item">
+            <span class="hex-legend-swatch" style="background:${color};"></span>
+            <span class="hex-legend-label">${theme.labels[i]}</span>
+          </div>`).join('')}
+      </div>`;
+  } else if (theme.type === 'unique') {
+    const entries = Object.entries(theme.values);
+    container.innerHTML = `
+      <div class="hex-legend-unique">
+        ${entries.map(([label, color]) => `
+          <div class="hex-legend-item">
+            <span class="hex-legend-swatch" style="background:${color};"></span>
+            <span class="hex-legend-label">${label}</span>
+          </div>`).join('')}
+      </div>`;
+  }
 };
 
 document.addEventListener('DOMContentLoaded', () => {

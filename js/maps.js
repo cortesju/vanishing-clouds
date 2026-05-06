@@ -14,6 +14,51 @@ const MAX_ZOOM          = 9;             // zoom-in limit: ~20 miles on a 1080p 
 // ---- PARAMO FEATURE LAYER (ArcGIS FeatureServer) ----
 const PARAMO_FEATURE_URL = 'https://services1.arcgis.com/ZIL9uO234SBBPGL7/arcgis/rest/services/Paramos_de_Colombia_CopyFeatures/FeatureServer/0';
 
+// ---- SPECIES HEX LAYER (ArcGIS FeatureServer) ----
+// One source, three thematic renderers: richness / count / decade.
+const PARAMO_SPECIES_LAYER_URL = 'https://services1.arcgis.com/ZIL9uO234SBBPGL7/arcgis/rest/services/paramo_hex_records_count/FeatureServer/0';
+
+// Theme configs — shared between the style function (maps.js) and the legend renderer (species.js).
+// Exposed as window.SPECIES_HEX_THEMES so species.js can read them without duplication.
+const SPECIES_HEX_THEMES = {
+  richness: {
+    field:  'species_richness',
+    title:  'Species Richness',
+    type:   'breaks',
+    // Upper bound of each class (last class = Infinity → catches everything above)
+    breaks: [5, 15, 30, 50, Infinity],
+    colors: ['#EDF8FB', '#B2E2E2', '#66C2A4', '#2CA25F', '#006D2C'],
+    labels: ['1 – 5', '6 – 15', '16 – 30', '31 – 50', '51 +'],
+  },
+  count: {
+    field:  'record_count',
+    title:  'Observation Count',
+    type:   'breaks',
+    breaks: [10, 50, 150, 500, Infinity],
+    colors: ['#FFFFD4', '#FED98E', '#FE9929', '#D95F0E', '#993404'],
+    labels: ['1 – 10', '11 – 50', '51 – 150', '151 – 500', '500 +'],
+  },
+  decade: {
+    field:   'decade_period',
+    title:   'Observation Decade',
+    type:    'unique',
+    // Covers likely decade string values; fallback handles anything unrecognised
+    values: {
+      '1940s': '#A78BFA',
+      '1950s': '#7C3AED',
+      '1960s': '#5B2C8D',
+      '1970s': '#2874A6',
+      '1980s': '#1565C0',
+      '1990s': '#148F77',
+      '2000s': '#E67E22',
+      '2010s': '#D35400',
+      '2020s': '#27AE60',
+    },
+    fallback: '#9AA5B4',
+  },
+};
+window.SPECIES_HEX_THEMES = SPECIES_HEX_THEMES;  // expose to species.js
+
 // ---- CUSTOM BASEMAP LAYERS ----
 // 1. Colombia terrain raster — ArcGIS MapServer (tiled)
 const TERRAIN_URL = 'https://tiles.arcgis.com/tiles/ZIL9uO234SBBPGL7/arcgis/rest/services/base2/MapServer';
@@ -121,6 +166,7 @@ function syncAllGL() {
 const LG = {
   paramoFill:      null,
   paramoOutline:   null,
+  speciesHexLayer: null,   // NEW — aggregated species hex (richness / count / decade)
   speciesPoints:   null,
   agriculture:     null,
   fire:            null,
@@ -141,7 +187,7 @@ const DATA = {
 // Per-panel default visible layers
 const PANEL_LAYERS = {
   overview:  ['paramoFill', 'paramoOutline'],
-  species:   ['paramoOutline', 'speciesPoints'],
+  species:   ['paramoOutline', 'speciesHexLayer'],  // hex layer replaces raw points as default
   timeline:  ['paramoOutline', 'speciesPoints'],
   threats:   ['paramoOutline', 'agriculture', 'fire'],
   urgency:   ['urgencyHexagons', 'paramoOutline'],
@@ -150,6 +196,9 @@ const PANEL_LAYERS = {
 
 // Current time-period filter for species points
 let currentPeriod = 'all';
+
+// Active theme for the species hex layer
+let activeSpeciesTheme = 'richness';
 
 // ============================================================
 // HELPERS
@@ -518,6 +567,7 @@ async function loadAllData() {
   // in the local data fetch can never take them down.
   buildParamoFill();
   buildParamoOutline();
+  buildSpeciesHexLayer();   // loads from ArcGIS server — independent of local GeoJSON
   applyPanelLayers('overview');
 
   // ── Local GeoJSON data (species, land cover, fire, urgency) ──
@@ -620,6 +670,99 @@ function buildParamoOutline() {
     },
   });
 }
+
+// ============================================================
+// SPECIES HEX LAYER — aggregated statistics per páramo hexagon
+// One L.esri.featureLayer instance; three themes switch via
+// setStyle() so the data is fetched exactly once.
+// ============================================================
+
+// Returns the fill colour for a feature under the given theme.
+function getSpeciesHexStyle(themeName, feature) {
+  const theme = SPECIES_HEX_THEMES[themeName];
+  const p = feature?.properties || {};
+  let fillColor = '#9AA5B4';  // neutral fallback
+
+  if (theme.type === 'breaks') {
+    const val = Number(p[theme.field]);
+    if (!isNaN(val)) {
+      for (let i = 0; i < theme.breaks.length; i++) {
+        if (val <= theme.breaks[i]) { fillColor = theme.colors[i]; break; }
+      }
+    }
+  } else if (theme.type === 'unique') {
+    fillColor = theme.values[p[theme.field]] ?? theme.fallback;
+  }
+
+  return {
+    fillColor,
+    fillOpacity: 0.78,
+    color:   'rgba(255,255,255,0.35)',
+    weight:  0.8,
+    opacity: 0.9,
+  };
+}
+
+function buildSpeciesHexPopup(p) {
+  const richness = p.species_richness != null ? Number(p.species_richness).toLocaleString() : '—';
+  const count    = p.record_count     != null ? Number(p.record_count).toLocaleString()     : '—';
+  const decade   = p.decade_period    || '—';
+  return `
+    <div style="font-family:Helvetica Neue,Helvetica,Arial,sans-serif;padding:10px 13px;min-width:190px;">
+      <h4 style="margin:0 0 8px;font-size:13px;font-weight:700;color:#1B5E3B;
+                 border-bottom:1px solid #eee;padding-bottom:6px;">Páramo Hexagon</h4>
+      <table style="width:100%;font-size:12px;border-collapse:collapse;">
+        <tr>
+          <td style="color:#888;padding:3px 0;">Species richness</td>
+          <td style="font-weight:700;text-align:right;color:#1B5E3B;">${richness}</td>
+        </tr>
+        <tr>
+          <td style="color:#888;padding:3px 0;">Total records</td>
+          <td style="font-weight:700;text-align:right;">${count}</td>
+        </tr>
+        <tr>
+          <td style="color:#888;padding:3px 0;">Peak decade</td>
+          <td style="font-weight:700;text-align:right;">${decade}</td>
+        </tr>
+      </table>
+    </div>`;
+}
+
+function buildSpeciesHexLayer() {
+  if (LG.speciesHexLayer) { map.removeLayer(LG.speciesHexLayer); }
+
+  LG.speciesHexLayer = L.esri.featureLayer({
+    url:   PARAMO_SPECIES_LAYER_URL,
+    style: feature => getSpeciesHexStyle(activeSpeciesTheme, feature),
+    onEachFeature(feature, layer) {
+      const p = feature.properties || {};
+      layer.bindPopup(buildSpeciesHexPopup(p), { maxWidth: 260 });
+      layer.on('mouseover', function() {
+        this.setStyle({ fillOpacity: 0.95, weight: 2 });
+        this.bringToFront();
+      });
+      layer.on('mouseout', function() {
+        LG.speciesHexLayer.resetStyle(this);
+      });
+    },
+  });
+}
+
+// Called by the sidebar theme selector (wired in species.js).
+// Re-styles the existing layer in-place — no new network request.
+window.switchSpeciesTheme = function(themeName) {
+  if (!SPECIES_HEX_THEMES[themeName]) return;
+  activeSpeciesTheme = themeName;
+
+  if (LG.speciesHexLayer) {
+    LG.speciesHexLayer.setStyle(feature => getSpeciesHexStyle(themeName, feature));
+  }
+
+  // Update the legend rendered inside the species sidebar
+  if (typeof window.renderSpeciesHexLegend === 'function') {
+    window.renderSpeciesHexLegend(themeName);
+  }
+};
 
 // ---- Species occurrence points ----
 function buildSpeciesPoints(period) {

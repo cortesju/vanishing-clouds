@@ -732,6 +732,98 @@ a:hover { color: var(--primary); text-decoration: underline; }
 }
 
 /* ============================================================
+   9b. SPECIES PANEL — MAP THEME SELECTOR & HEX LEGEND
+   ============================================================ */
+
+/* Small uppercase label used as sub-section headings inside the species panel */
+.species-section-label {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  color: var(--text-light);
+  text-transform: uppercase;
+  margin-bottom: 0.55rem;
+}
+
+/* Wrapper card for the map-theme selector + legend */
+.species-map-section {
+  background: #F8F9FA;
+  border: 1px solid rgba(0,0,0,0.07);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Three theme-picker pills */
+.species-theme-selector {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.85rem;
+}
+
+.theme-btn {
+  padding: 0.28rem 0.7rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.74rem;
+  font-weight: 500;
+  border: 1.5px solid rgba(0,0,0,0.14);
+  color: var(--text-medium);
+  background: white;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, color 0.18s;
+  white-space: nowrap;
+}
+
+.theme-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-pale);
+}
+
+.theme-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* Legend container — fades in when theme changes */
+.species-hex-legend {
+  transition: opacity 0.22s ease;
+}
+
+/* Horizontal ramp for class-break themes */
+.hex-legend-ramp,
+.hex-legend-unique {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.7rem;
+  align-items: center;
+}
+
+.hex-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.hex-legend-swatch {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
+  border: 1px solid rgba(0,0,0,0.12);
+  flex-shrink: 0;
+}
+
+.hex-legend-label {
+  font-size: 0.72rem;
+  color: var(--text-medium);
+  white-space: nowrap;
+}
+
+/* ============================================================
    10. TIMELINE PANEL
    ============================================================ */
 .time-controls {

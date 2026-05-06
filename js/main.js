@@ -64,6 +64,22 @@ const PANEL_TEMPLATES = {
       <span class="panel-eyebrow">BIODIVERSITY</span>
       <h2 class="panel-title">Life Found Nowhere Else</h2>
       <p class="panel-lead">Endemic species uniquely adapted to the extreme cold and humidity of Colombia's high Andes.</p>
+
+      <!-- ── Map theme selector ───────────────────────────────── -->
+      <div class="species-map-section">
+        <span class="species-section-label">MAP THEME</span>
+        <div class="species-theme-selector">
+          <button class="theme-btn active" data-theme="richness">Species Richness</button>
+          <button class="theme-btn"        data-theme="count">Record Count</button>
+          <button class="theme-btn"        data-theme="decade">Decade</button>
+        </div>
+        <div id="species-hex-legend" class="species-hex-legend"></div>
+      </div>
+
+      <div class="panel-divider"></div>
+
+      <!-- ── Species card grid ────────────────────────────────── -->
+      <span class="species-section-label">SPECIES EXPLORER</span>
       <div class="species-filters">
         <button class="filter-btn active" data-filter="all">All</button>
         <button class="filter-btn" data-filter="Flora">Flora</button>
@@ -299,9 +315,15 @@ function afterPanelRender(panelId) {
   }
 
   if (panelId === 'species') {
-    // Re-wire filter buttons and render grid
+    // Re-wire filter buttons and render card grid
     if (typeof window.initSpeciesPanel === 'function') {
       window.initSpeciesPanel();
+    }
+    // Render initial legend for whichever theme is currently active
+    if (typeof window.renderSpeciesHexLegend === 'function') {
+      window.renderSpeciesHexLegend(
+        (window.SPECIES_HEX_THEMES && window._activeSpeciesTheme) || 'richness'
+      );
     }
   }
 
