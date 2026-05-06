@@ -368,6 +368,7 @@ function initHillshadeOverlay() {
 
   const container = document.createElement('div');
   container.id = 'hillshade-gl';
+  container.style.opacity = '0';          // invisible from the start — no white-canvas flash
   document.getElementById('map-main').appendChild(container);
 
   const center = map.getCenter();
@@ -414,14 +415,6 @@ function initHillshadeOverlay() {
     interactive: false,
     attributionControl: false,
     preserveDrawingBuffer: false,
-  });
-
-  // Hillshade is OFF by default.
-  // Hide AFTER the MapLibre 'load' event so the WebGL context fully initialises
-  // before the canvas is hidden — hiding during init can break the GL context
-  // and cause syncAllGL to stop updating the other GL canvases.
-  hillshadeMapGL.once('load', function () {
-    container.style.display = 'none';
   });
 
   map.on('move',    syncAllGL);
@@ -1272,7 +1265,7 @@ window.setBasemapVisible = function(key, visible) {
       break;
     case 'hillshade': {
       const glDiv = document.getElementById('hillshade-gl');
-      if (glDiv) glDiv.style.display = visible ? '' : 'none';
+      if (glDiv) glDiv.style.opacity = visible ? '0.75' : '0';
       break;
     }
     case 'vectortiles': {
