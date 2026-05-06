@@ -64,9 +64,12 @@ const SPECIES_HEX_THEMES = {
 window.SPECIES_HEX_THEMES = SPECIES_HEX_THEMES;  // expose to species.js
 
 // ---- GBIF occurrence points — animals & plants ----
-// Field `kingdom` (String) distinguishes kingdoms: "Animalia" | "Plantae"
-// Sub-filter uses L.esri.featureLayer.setWhere() — no extra network requests.
+// Field `kingdom` distinguishes kingdoms: "Animalia" | "Plantae"
 const GBIF_POINTS_URL = 'https://services1.arcgis.com/ZIL9uO234SBBPGL7/arcgis/rest/services/GbifPoints_AnimalPlant/FeatureServer/0';
+// Pre-aggregated heatmap service — used at low zoom for performance
+const GBIF_HEAT_URL   = 'https://services1.arcgis.com/ZIL9uO234SBBPGL7/arcgis/rest/services/GbifPoints_AnimalPlantScale_heatmap/FeatureServer/0';
+// Below this zoom: heat map   /   at or above: individual hex markers
+const POINTS_MIN_ZOOM = 9;
 
 // ---- CUSTOM BASEMAP LAYERS ----
 // 1. Colombia terrain raster — ArcGIS MapServer (tiled)
@@ -210,6 +213,23 @@ let currentPeriod = 'all';
 // Active theme for the species hex layer
 let activeSpeciesTheme = 'richness';
 
+// GBIF points runtime state
+let gbifHeatLayer         = null;   // L.heatLayer instance (zoom-out view)
+let _gbifKingdomFilter    = null;   // "Animalia" | "Plantae" | null
+let _gbifDecadeIdx        = 4;      // index into GBIF_DECADES (4 = all time)
+let _gbifPlayInterval     = null;   // setInterval handle for timeline play
+
+// Cumulative decade time steps — each step adds one more era to the WHERE clause.
+// Exposed so the sidebar JS can read labels without duplication.
+const GBIF_DECADES = [
+  { label: 'Pre-1980',  where: "decade_period = 'Before 1980'" },
+  { label: '1980–1999', where: "decade_period IN ('Before 1980','1980-1999')" },
+  { label: '2000–2010', where: "decade_period IN ('Before 1980','1980-1999','2000-2010')" },
+  { label: '2011–2020', where: "decade_period IN ('Before 1980','1980-1999','2000-2010','2011-2020')" },
+  { label: '2021–Now',  where: '1=1' },
+];
+window.GBIF_DECADES = GBIF_DECADES;
+
 // ============================================================
 // HELPERS
 // ============================================================
@@ -322,6 +342,7 @@ function initMap() {
   // Starts hidden; fades in automatically once zoom >= DETAIL_MIN_ZOOM.
   initDetailTileOverlay();
   map.on('zoomend', updateDetailLayerVisibility);
+  map.on('zoomend', updateGbifLayersByZoom);
 
   // Load all data then build initial layers
   loadAllData();
@@ -579,6 +600,7 @@ async function loadAllData() {
   buildParamoOutline();
   buildSpeciesHexLayer();    // aggregated hex — independent of local GeoJSON
   buildGbifPointsLayer();    // GBIF occurrence points — managed by theme switcher
+  initGbifHeatLayer();       // pre-warm heat layer (data loaded lazily on demand)
   applyPanelLayers('overview');
 
   // ── Local GeoJSON data (species, land cover, fire, urgency) ──
@@ -765,12 +787,36 @@ function buildSpeciesHexLayer() {
 // Only added to the map when the 'points' theme is active.
 // ============================================================
 
-// Kingdom → fill colour (aligned with site Flora/Fauna palette)
-function getGbifPointColor(kingdom) {
+// ── Hex marker SVG (flat-top hexagon, ~10×12px) ──────────────
+// Plants → green  /  Animals → amber-brown  /  Other → grey
+const GBIF_COLORS = {
+  animal: { fill: '#C8963E', stroke: '#8B6914' },
+  plant:  { fill: '#4F9942', stroke: '#2D6A4F' },
+  other:  { fill: '#9AA5B4', stroke: '#6B7A8D' },
+};
+
+function gbifKingdomKey(kingdom) {
   const k = (kingdom || '').toLowerCase();
-  if (k.startsWith('anim')) return '#E67E22';   // Animalia → amber
-  if (k.startsWith('plant') || k.startsWith('virid')) return '#27AE60';  // Plantae → green
-  return '#9AA5B4';   // fungi, chromista, etc.
+  if (k.startsWith('anim')) return 'animal';
+  if (k.startsWith('plant') || k.startsWith('virid')) return 'plant';
+  return 'other';
+}
+
+function createHexIcon(kingdom) {
+  const { fill, stroke } = GBIF_COLORS[gbifKingdomKey(kingdom)];
+  // Flat-top regular hexagon inscribed in a 12×10 viewport
+  // Points: right, upper-right, upper-left, left, lower-left, lower-right
+  const pts = '11,5 8.5,0.5 3.5,0.5 1,5 3.5,9.5 8.5,9.5';
+  return L.divIcon({
+    html: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="10" viewBox="0 0 12 10">
+             <polygon points="${pts}" fill="${fill}" fill-opacity="0.72"
+                      stroke="${stroke}" stroke-width="0.9"/>
+           </svg>`,
+    className: 'gbif-hex-marker',
+    iconSize:    [12, 10],
+    iconAnchor:  [6,  5],
+    popupAnchor: [0, -6],
+  });
 }
 
 function buildGbifPointPopup(p) {
@@ -779,10 +825,10 @@ function buildGbifPointPopup(p) {
   const decade  = p.decade_period  || '—';
   const year    = p.year           ? String(p.year) : '—';
   const family  = p.family         || '—';
-  const color   = getGbifPointColor(p.kingdom);
+  const { fill } = GBIF_COLORS[gbifKingdomKey(p.kingdom)];
   return `
     <div style="font-family:Helvetica Neue,Helvetica,Arial,sans-serif;padding:10px 13px;min-width:200px;">
-      <p style="margin:0 0 6px;font-style:italic;font-size:13px;font-weight:700;color:${color};">${name}</p>
+      <p style="margin:0 0 6px;font-style:italic;font-size:13px;font-weight:700;color:${fill};">${name}</p>
       <table style="width:100%;font-size:11px;border-collapse:collapse;">
         <tr><td style="color:#888;padding:2px 0">Kingdom</td><td style="font-weight:600;text-align:right">${kingdom}</td></tr>
         <tr><td style="color:#888;padding:2px 0">Family</td><td style="font-weight:600;text-align:right">${family}</td></tr>
@@ -794,65 +840,161 @@ function buildGbifPointPopup(p) {
 
 function buildGbifPointsLayer() {
   if (LG.gbifPointsLayer) { map.removeLayer(LG.gbifPointsLayer); }
-
   LG.gbifPointsLayer = L.esri.featureLayer({
     url: GBIF_POINTS_URL,
-    pointToLayer(feature, latlng) {
-      const color = getGbifPointColor(feature.properties?.kingdom);
-      return L.circleMarker(latlng, {
-        radius:      5,
-        fillColor:   color,
-        color:       'rgba(255,255,255,0.55)',
-        weight:      0.8,
-        fillOpacity: 0.78,
-        opacity:     1,
-      });
-    },
+    pointToLayer: (feature, latlng) => L.marker(latlng, { icon: createHexIcon(feature.properties?.kingdom) }),
     onEachFeature(feature, layer) {
       layer.bindPopup(buildGbifPointPopup(feature.properties || {}), { maxWidth: 260 });
-      layer.on('mouseover', function() { this.setStyle({ fillOpacity: 1, weight: 1.5 }); });
-      layer.on('mouseout',  function() { this.setStyle({ fillOpacity: 0.78, weight: 0.8 }); });
+      // Highlight on hover by swapping icon
+      layer.on('mouseover', function() {
+        const { fill, stroke } = GBIF_COLORS[gbifKingdomKey(feature.properties?.kingdom)];
+        const pts = '11,5 8.5,0.5 3.5,0.5 1,5 3.5,9.5 8.5,9.5';
+        this.setIcon(L.divIcon({
+          html: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="12" viewBox="0 0 12 10">
+                   <polygon points="${pts}" fill="${fill}" fill-opacity="1"
+                            stroke="${stroke}" stroke-width="1.2"/>
+                 </svg>`,
+          className: 'gbif-hex-marker',
+          iconSize: [14, 12], iconAnchor: [7, 6], popupAnchor: [0, -7],
+        }));
+      });
+      layer.on('mouseout', function() {
+        this.setIcon(createHexIcon(feature.properties?.kingdom));
+      });
     },
   });
-  // gbifPointsLayer is NOT added to map here — switchSpeciesTheme manages visibility
 }
 
-// Filter GBIF points by kingdom ("Animalia" | "Plantae" | null = all).
-// Called by sub-filter buttons in the species sidebar.
+// ── Heat map — shown when zoom < POINTS_MIN_ZOOM ─────────────
+// Uses leaflet.heat (already loaded). Populated via L.esri.query
+// against the dedicated scale-heatmap service (pre-aggregated).
+
+function initGbifHeatLayer() {
+  if (gbifHeatLayer) return;  // already created
+  gbifHeatLayer = L.heatLayer([], {
+    radius:     22,
+    blur:       18,
+    minOpacity: 0.25,
+    gradient: {
+      0.0: 'rgba(8,29,88,0)',
+      0.25: 'rgba(37,52,148,0.7)',
+      0.5:  'rgba(65,182,196,0.8)',
+      0.75: 'rgba(199,233,180,0.9)',
+      1.0:  '#FFFFCC',
+    },
+  });
+  refreshGbifHeatData();
+}
+
+function refreshGbifHeatData() {
+  if (!gbifHeatLayer) return;
+  const where = buildGbifWhere();
+  L.esri.query({ url: GBIF_HEAT_URL })
+    .where(where)
+    .run((err, fc) => {
+      if (err) { console.warn('[maps.js] Heat query failed:', err); return; }
+      const pts = (fc?.features || []).map(f => [
+        f.geometry.coordinates[1],
+        f.geometry.coordinates[0],
+        1,
+      ]);
+      gbifHeatLayer.setLatLngs(pts);
+    });
+}
+
+// Build the combined WHERE clause from kingdom + decade filters
+function buildGbifWhere() {
+  const decade  = GBIF_DECADES[_gbifDecadeIdx]?.where || '1=1';
+  const kingdom = _gbifKingdomFilter ? `kingdom = '${_gbifKingdomFilter}'` : null;
+  if (kingdom && decade !== '1=1') return `(${decade}) AND (${kingdom})`;
+  return kingdom || decade;
+}
+
+// Show heat or points based on current map zoom — called on zoom + theme switch
+function updateGbifLayersByZoom() {
+  if (activeSpeciesTheme !== 'points') return;
+  const zoomIn = map.getZoom() >= POINTS_MIN_ZOOM;
+  if (zoomIn) {
+    if (gbifHeatLayer && map.hasLayer(gbifHeatLayer)) map.removeLayer(gbifHeatLayer);
+    if (LG.gbifPointsLayer && !map.hasLayer(LG.gbifPointsLayer)) LG.gbifPointsLayer.addTo(map);
+  } else {
+    if (LG.gbifPointsLayer && map.hasLayer(LG.gbifPointsLayer)) map.removeLayer(LG.gbifPointsLayer);
+    if (!gbifHeatLayer) initGbifHeatLayer();
+    if (gbifHeatLayer && !map.hasLayer(gbifHeatLayer)) gbifHeatLayer.addTo(map);
+  }
+}
+
+// ── Public API ────────────────────────────────────────────────
+
+// Kingdom sub-filter (All / Animals / Plants)
 window.filterGbifPoints = function(kingdom) {
-  if (!LG.gbifPointsLayer) return;
-  const where = kingdom ? `kingdom = '${kingdom}'` : '1=1';
-  LG.gbifPointsLayer.setWhere(where);
+  _gbifKingdomFilter = kingdom || null;
+  const where = buildGbifWhere();
+  if (LG.gbifPointsLayer) LG.gbifPointsLayer.setWhere(where);
+  refreshGbifHeatData();
+};
+
+// Time-slider step (0–4, cumulative decades)
+window.setGbifDecade = function(idx) {
+  _gbifDecadeIdx = Number(idx);
+  const where = buildGbifWhere();
+  if (LG.gbifPointsLayer) LG.gbifPointsLayer.setWhere(where);
+  refreshGbifHeatData();
+  // Update label in the sidebar if visible
+  const lbl = document.getElementById('ts-decade-label');
+  if (lbl) lbl.textContent = GBIF_DECADES[_gbifDecadeIdx]?.label ?? '';
+};
+
+// Timeline auto-play
+window.playGbifTimeline = function() {
+  if (_gbifPlayInterval) return;
+  // Start from beginning if already at end
+  if (_gbifDecadeIdx >= GBIF_DECADES.length - 1) {
+    _gbifDecadeIdx = -1;  // will become 0 on first tick
+    const rng = document.getElementById('ts-range');
+    if (rng) rng.value = 0;
+  }
+  _gbifPlayInterval = setInterval(() => {
+    _gbifDecadeIdx = Math.min(_gbifDecadeIdx + 1, GBIF_DECADES.length - 1);
+    const rng = document.getElementById('ts-range');
+    if (rng) rng.value = _gbifDecadeIdx;
+    window.setGbifDecade(_gbifDecadeIdx);
+    if (_gbifDecadeIdx >= GBIF_DECADES.length - 1) window.pauseGbifTimeline();
+  }, 1400);
+};
+
+window.pauseGbifTimeline = function() {
+  clearInterval(_gbifPlayInterval);
+  _gbifPlayInterval = null;
+  const btn = document.getElementById('ts-play-btn');
+  if (btn) { btn.textContent = '▶ Play'; btn.classList.remove('playing'); }
 };
 
 // Called by the sidebar theme selector (wired in species.js).
-// Switches between the hex layer (3 themes) and the GBIF points layer.
 window.switchSpeciesTheme = function(themeName) {
+  // Stop timeline if switching away from points
+  if (activeSpeciesTheme === 'points' && themeName !== 'points') {
+    window.pauseGbifTimeline();
+  }
   activeSpeciesTheme = themeName;
-  window._activeSpeciesTheme = themeName;   // persist across panel re-renders
+  window._activeSpeciesTheme = themeName;
 
   if (themeName === 'points') {
-    // Hide hex, show GBIF points
-    if (LG.speciesHexLayer && map.hasLayer(LG.speciesHexLayer)) {
-      map.removeLayer(LG.speciesHexLayer);
-    }
-    if (LG.gbifPointsLayer && !map.hasLayer(LG.gbifPointsLayer)) {
-      LG.gbifPointsLayer.addTo(map);
-    }
+    if (LG.speciesHexLayer && map.hasLayer(LG.speciesHexLayer)) map.removeLayer(LG.speciesHexLayer);
+    updateGbifLayersByZoom();  // decides heat or points based on zoom
   } else {
-    // Hide GBIF points, show (or re-style) hex layer
-    if (LG.gbifPointsLayer && map.hasLayer(LG.gbifPointsLayer)) {
-      map.removeLayer(LG.gbifPointsLayer);
-    }
+    // Remove both GBIF layers
+    if (LG.gbifPointsLayer && map.hasLayer(LG.gbifPointsLayer)) map.removeLayer(LG.gbifPointsLayer);
+    if (gbifHeatLayer && map.hasLayer(gbifHeatLayer)) map.removeLayer(gbifHeatLayer);
+    // Show hex layer with new theme
     if (LG.speciesHexLayer) {
       if (!map.hasLayer(LG.speciesHexLayer)) LG.speciesHexLayer.addTo(map);
       if (SPECIES_HEX_THEMES[themeName]) {
-        LG.speciesHexLayer.setStyle(feature => getSpeciesHexStyle(themeName, feature));
+        LG.speciesHexLayer.setStyle(f => getSpeciesHexStyle(themeName, f));
       }
     }
   }
 
-  // Refresh the legend in the sidebar
   if (typeof window.renderSpeciesHexLegend === 'function') {
     window.renderSpeciesHexLegend(themeName);
   }
@@ -1172,16 +1314,19 @@ window.onPanelChange = function(panelId) {
   if (panelId === 'species') {
     const theme = activeSpeciesTheme || 'richness';
     if (theme === 'points') {
+      // Remove hex layer (applyPanelLayers may have added it as default)
       if (LG.speciesHexLayer && map.hasLayer(LG.speciesHexLayer)) {
         map.removeLayer(LG.speciesHexLayer);
       }
-      if (LG.gbifPointsLayer && !map.hasLayer(LG.gbifPointsLayer)) {
-        LG.gbifPointsLayer.addTo(map);
-      }
+      // Zoom-based switch: heat at low zoom, points at high zoom
+      updateGbifLayersByZoom();
     } else {
-      // Make sure GBIF points are off
+      // Make sure both GBIF layers are off
       if (LG.gbifPointsLayer && map.hasLayer(LG.gbifPointsLayer)) {
         map.removeLayer(LG.gbifPointsLayer);
+      }
+      if (gbifHeatLayer && map.hasLayer(gbifHeatLayer)) {
+        map.removeLayer(gbifHeatLayer);
       }
     }
   }

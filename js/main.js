@@ -80,11 +80,31 @@ const PANEL_TEMPLATES = {
           <div class="points-filter-btns">
             <button class="pts-btn active" data-kingdom="">All</button>
             <button class="pts-btn" data-kingdom="Animalia">
-              <span class="pts-swatch" style="background:#E67E22"></span>Animals
+              <span class="pts-swatch" style="background:#C8963E"></span>Animals
             </button>
             <button class="pts-btn" data-kingdom="Plantae">
-              <span class="pts-swatch" style="background:#27AE60"></span>Plants
+              <span class="pts-swatch" style="background:#4F9942"></span>Plants
             </button>
+          </div>
+
+          <!-- ── Time slider ────────────────────────────────── -->
+          <div class="timeslider-section">
+            <div class="ts-header">
+              <span class="species-section-label" style="margin:0">THROUGH TIME</span>
+              <span id="ts-decade-label" class="ts-decade-label">2021–Now</span>
+            </div>
+            <div class="ts-track-wrap">
+              <input id="ts-range" class="ts-range" type="range"
+                     min="0" max="4" step="1" value="4">
+              <div class="ts-marks">
+                <span>Pre-1980</span>
+                <span>1980s</span>
+                <span>2000s</span>
+                <span>2010s</span>
+                <span>Now</span>
+              </div>
+            </div>
+            <button id="ts-play-btn" class="ts-play-btn">▶ Play</button>
           </div>
         </div>
         <div id="species-hex-legend" class="species-hex-legend"></div>

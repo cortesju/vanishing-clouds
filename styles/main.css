@@ -841,6 +841,113 @@ a:hover { color: var(--primary); text-decoration: underline; }
   flex-shrink: 0;
 }
 
+/* ── GBIF hex marker — override Leaflet's default icon wrapper ── */
+.gbif-hex-marker {
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  /* Fixes Leaflet adding a white square behind divIcons */
+  box-shadow: none !important;
+}
+
+/* ── Time slider (inside #species-points-filter) ── */
+.timeslider-section {
+  margin-top: 0.85rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid rgba(0,0,0,0.07);
+}
+
+.ts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.55rem;
+}
+
+.ts-decade-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--primary-pale);
+  border-radius: var(--radius-pill);
+  padding: 0.15rem 0.55rem;
+  letter-spacing: 0.01em;
+}
+
+.ts-track-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+/* Range input track */
+.ts-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(0,0,0,0.14);
+  outline: none;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.ts-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--primary);
+  border: 2px solid white;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.18);
+  cursor: pointer;
+}
+
+.ts-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--primary);
+  border: 2px solid white;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.18);
+  cursor: pointer;
+}
+
+/* Tick labels under the slider */
+.ts-marks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.63rem;
+  color: var(--text-light);
+  padding: 0 1px;
+}
+
+/* Play / Pause button */
+.ts-play-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.6rem;
+  padding: 0.28rem 0.85rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.73rem;
+  font-weight: 600;
+  border: 1.5px solid var(--primary);
+  color: var(--primary);
+  background: white;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+  letter-spacing: 0.02em;
+}
+
+.ts-play-btn:hover,
+.ts-play-btn.playing {
+  background: var(--primary);
+  color: white;
+}
+
 /* Legend container — fades in when theme changes */
 .species-hex-legend {
   transition: opacity 0.22s ease;

@@ -413,6 +413,44 @@ window.initSpeciesPanel = function() {
     });
   });
 
+  // ── Wire time slider ──────────────────────────────────────
+  const tsRange = document.getElementById('ts-range');
+  const tsPlayBtn = document.getElementById('ts-play-btn');
+
+  if (tsRange) {
+    // Restore slider position from maps.js state (GBIF_DECADES length = 5)
+    const decades = window.GBIF_DECADES || [];
+    const currentIdx = (typeof window.setGbifDecade === 'function' && decades.length)
+      ? Math.max(0, Math.min(decades.length - 1,
+          parseInt(tsRange.getAttribute('data-current') || '4', 10)))
+      : 4;
+    tsRange.value = currentIdx;
+
+    tsRange.addEventListener('input', () => {
+      if (tsPlayBtn) {
+        tsPlayBtn.textContent = '▶ Play';
+        tsPlayBtn.classList.remove('playing');
+      }
+      if (typeof window.pauseGbifTimeline === 'function') window.pauseGbifTimeline();
+      if (typeof window.setGbifDecade === 'function') window.setGbifDecade(tsRange.value);
+    });
+  }
+
+  if (tsPlayBtn) {
+    tsPlayBtn.addEventListener('click', () => {
+      const isPlaying = tsPlayBtn.classList.contains('playing');
+      if (isPlaying) {
+        if (typeof window.pauseGbifTimeline === 'function') window.pauseGbifTimeline();
+        tsPlayBtn.textContent = '▶ Play';
+        tsPlayBtn.classList.remove('playing');
+      } else {
+        tsPlayBtn.textContent = '⏸ Pause';
+        tsPlayBtn.classList.add('playing');
+        if (typeof window.playGbifTimeline === 'function') window.playGbifTimeline();
+      }
+    });
+  }
+
   // Render the legend for the current theme
   window.renderSpeciesHexLegend(currentTheme);
 };
@@ -430,11 +468,11 @@ window.renderSpeciesHexLegend = function(themeName) {
     container.innerHTML = `
       <div class="hex-legend-unique">
         <div class="hex-legend-item">
-          <span class="hex-legend-swatch" style="background:#E67E22;"></span>
+          <span class="hex-legend-swatch" style="background:#C8963E;"></span>
           <span class="hex-legend-label">Animals (Animalia)</span>
         </div>
         <div class="hex-legend-item">
-          <span class="hex-legend-swatch" style="background:#27AE60;"></span>
+          <span class="hex-legend-swatch" style="background:#4F9942;"></span>
           <span class="hex-legend-label">Plants (Plantae)</span>
         </div>
         <div class="hex-legend-item">
