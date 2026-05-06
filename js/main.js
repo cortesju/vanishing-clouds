@@ -275,6 +275,137 @@ const PANEL_TEMPLATES = {
     </div>
   `,
 
+  build: () => `
+    <div class="panel-section build-panel">
+      <span class="panel-eyebrow">GEOGRAPHY</span>
+      <h2 class="panel-title">Build a Páramo</h2>
+      <p class="panel-lead">Stack the environmental conditions that allow páramos to form — and watch the geography respond layer by layer.</p>
+
+      <!-- What does a páramo need? -->
+      <div class="bp-intro-card">
+        <div class="bp-intro-icon">🏔</div>
+        <div class="bp-intro-text">
+          <strong>What does a páramo need?</strong>
+          <p>Páramos are not random. They emerge where five conditions converge: high elevation, cold temperatures, abundant moisture, tropical latitude, and the specific architecture of the Andes. Toggle each condition below to build the picture.</p>
+        </div>
+      </div>
+
+      <!-- Status bar -->
+      <div class="bp-status-bar">
+        <span id="bp-layer-count" class="bp-layer-count" data-count="0">No layers active</span>
+        <button id="bp-reset-btn" class="bp-reset-btn" title="Remove all active layers">↺ Reset</button>
+      </div>
+
+      <!-- Environmental layer cards -->
+      <div class="bp-layers-list">
+
+        <div class="bp-layer-card" id="bp-card-elevation" style="--layer-color:#546E7A">
+          <div class="bp-layer-card-header">
+            <div class="bp-layer-icon" style="background:rgba(84,110,122,0.13);color:#37474F">⛰</div>
+            <div class="bp-layer-meta">
+              <span class="bp-layer-name">Elevation</span>
+              <span class="bp-layer-label">High tropical mountains · ≥ 2,800 m</span>
+            </div>
+            <label class="bp-switch" title="Toggle elevation layer on map">
+              <input type="checkbox" id="bp-toggle-elevation">
+              <span class="bp-switch-track"><span class="bp-switch-thumb"></span></span>
+            </label>
+          </div>
+          <p class="bp-layer-desc">Páramos form above the Andean tree line. Elevation controls temperature, UV intensity, and atmospheric pressure — it is the physical stage on which every other condition plays out. Without altitude, the other factors cannot exist in their páramo form.</p>
+          <div class="bp-layer-swatch"></div>
+        </div>
+
+        <div class="bp-layer-card" id="bp-card-temperature" style="--layer-color:#3949AB">
+          <div class="bp-layer-card-header">
+            <div class="bp-layer-icon" style="background:rgba(57,73,171,0.13);color:#283593">🌡</div>
+            <div class="bp-layer-meta">
+              <span class="bp-layer-name">Temperature</span>
+              <span class="bp-layer-label">Cold but not permanently frozen · 2 – 10 °C</span>
+            </div>
+            <label class="bp-switch" title="Toggle temperature layer on map">
+              <input type="checkbox" id="bp-toggle-temperature">
+              <span class="bp-switch-track"><span class="bp-switch-thumb"></span></span>
+            </label>
+          </div>
+          <p class="bp-layer-desc">Mean annual temperatures between 2 °C and 10 °C define the thermal niche of páramo life. Unlike polar environments, páramos experience freeze-thaw cycles daily, not seasonally — temperatures can swing 20 °C in 24 hours, compressing a whole year of climate variation into a single day.</p>
+          <div class="bp-layer-swatch"></div>
+        </div>
+
+        <div class="bp-layer-card" id="bp-card-precipitation" style="--layer-color:#1565C0">
+          <div class="bp-layer-card-header">
+            <div class="bp-layer-icon" style="background:rgba(21,101,192,0.13);color:#0D47A1">🌧</div>
+            <div class="bp-layer-meta">
+              <span class="bp-layer-name">Precipitation & Moisture</span>
+              <span class="bp-layer-label">Wet, cloudy, humid · 700 – 3,000 mm / yr</span>
+            </div>
+            <label class="bp-switch" title="Toggle precipitation layer on map">
+              <input type="checkbox" id="bp-toggle-precipitation">
+              <span class="bp-switch-track"><span class="bp-switch-thumb"></span></span>
+            </label>
+          </div>
+          <p class="bp-layer-desc">Persistent cloud cover and high annual rainfall keep páramo soils perpetually saturated. Frailejones capture cloud moisture through their woolly leaves and channel it into Colombia's river systems, supplying water to 48 million people downstream.</p>
+          <div class="bp-layer-swatch"></div>
+        </div>
+
+        <div class="bp-layer-card" id="bp-card-seasonality" style="--layer-color:#6A1B9A">
+          <div class="bp-layer-card-header">
+            <div class="bp-layer-icon" style="background:rgba(106,27,154,0.13);color:#4A148C">☁</div>
+            <div class="bp-layer-meta">
+              <span class="bp-layer-name">Climate Seasonality</span>
+              <span class="bp-layer-label">Unique tropical alpine conditions</span>
+            </div>
+            <label class="bp-switch" title="Toggle climate seasonality layer on map">
+              <input type="checkbox" id="bp-toggle-seasonality">
+              <span class="bp-switch-track"><span class="bp-switch-thumb"></span></span>
+            </label>
+          </div>
+          <p class="bp-layer-desc">Tropical latitude means no astronomical winter — yet high altitude brings intense UV radiation, thin air, and nightly frost. This paradox of simultaneous extremes, found nowhere else on Earth, shaped every organism living in the páramo into something wholly original.</p>
+          <div class="bp-layer-swatch"></div>
+        </div>
+
+      </div><!-- /.bp-layers-list -->
+
+      <div class="panel-divider"></div>
+
+      <!-- Suitability composite -->
+      <div class="bp-composite-section">
+        <span class="species-section-label">SUITABILITY COMPOSITE</span>
+        <p class="bp-composite-desc">Combine your active layers into a single suitability surface. Areas meeting more conditions appear in warmer gold tones. Activate at least two layers to unlock.</p>
+        <button id="bp-composite-btn" class="bp-composite-btn" disabled title="Activate at least 2 environmental layers first">
+          <span class="bp-composite-icon">◎</span>
+          Show Suitability Composite
+        </button>
+
+        <label class="layer-toggle bp-compare-label" for="bp-compare-toggle">
+          <input type="checkbox" id="bp-compare-toggle">
+          <span class="toggle-label" style="color:var(--primary)">Overlay official páramo boundaries</span>
+        </label>
+        <p class="bp-compare-note">Compare the model with IAvH ground-truth polygons to see how closely environmental conditions predict real páramo locations.</p>
+      </div>
+
+      <!-- Interpretation (revealed once composite is active) -->
+      <div id="bp-interpretation" class="bp-interpretation hidden">
+        <div class="insight-box">
+          <h4>What this tells us</h4>
+          <p>Páramos are not accidents of nature. They arise where tropical latitude, Andean topography, high elevation, cool temperatures, and persistent moisture all converge — and nowhere is that overlap more concentrated than in Colombia's three cordilleras.</p>
+          <p style="margin-top:0.5rem">Compare the suitability model with the official IAvH polygons: they should align closely over the established páramo belt, with divergence at transition zones where ecological classification is genuinely ambiguous.</p>
+        </div>
+        <div class="bp-suitability-legend">
+          <span class="bp-suit-label">Low suitability</span>
+          <div class="bp-suit-ramp"></div>
+          <span class="bp-suit-label">High suitability</span>
+        </div>
+      </div>
+
+      <!-- Placeholder notice -->
+      <div class="bp-placeholder-notice">
+        <span class="bp-placeholder-icon">⚠</span>
+        <span>Environmental overlays are placeholder data. Replace the URL constants at the top of <code>js/build-paramo.js</code> with your raster tile services to enable real environmental layers.</span>
+      </div>
+
+    </div>
+  `,
+
   about: () => `
     <div class="panel-section about-panel">
       <span class="panel-eyebrow">METHODOLOGY</span>
@@ -417,6 +548,13 @@ function afterPanelRender(panelId) {
     // Re-init donut chart
     if (typeof window.initUrgencyDonut === 'function') {
       setTimeout(() => window.initUrgencyDonut(), 50);
+    }
+  }
+
+  if (panelId === 'build') {
+    // Wire layer toggles, composite button and compare toggle
+    if (typeof window.wireBuildPanel === 'function') {
+      window.wireBuildPanel();
     }
   }
 }

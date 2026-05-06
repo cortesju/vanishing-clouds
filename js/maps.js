@@ -202,6 +202,8 @@ const DATA = {
 // Per-panel default visible layers
 const PANEL_LAYERS = {
   overview:  ['paramoFill', 'paramoOutline'],
+  // build: páramo outline only — user stacks environmental layers interactively via build-paramo.js
+  build:     ['paramoOutline'],
   species:   ['paramoOutline', 'gbifPointsLayer'],   // GBIF points are the default theme
   timeline:  ['paramoOutline', 'speciesPoints'],
   threats:   ['paramoOutline', 'agriculture', 'fire'],
@@ -1366,6 +1368,10 @@ window.onPanelChange = function(panelId) {
   if (_mapActivePanel === 'species' && panelId !== 'species') {
     if (LG.gbifPointsLayer && map.hasLayer(LG.gbifPointsLayer)) map.removeLayer(LG.gbifPointsLayer);
     if (gbifHeatLayer && map.hasLayer(gbifHeatLayer)) map.removeLayer(gbifHeatLayer);
+  }
+  // Remove build-panel overlays when leaving (state preserved for next visit)
+  if (_mapActivePanel === 'build' && panelId !== 'build') {
+    if (typeof window.cleanupBuildPanel === 'function') window.cleanupBuildPanel();
   }
   _mapActivePanel = panelId;
 
