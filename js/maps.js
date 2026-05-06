@@ -215,9 +215,6 @@ let currentPeriod = 'all';
 // Active theme for the species hex layer — 'points' is default (shows GBIF occurrence points)
 let activeSpeciesTheme = 'points';
 
-// Currently active panel — used to gate layer visibility
-let activePanel = 'overview';
-
 // GBIF points runtime state
 let gbifHeatLayer         = null;   // L.heatLayer instance (zoom-out view)
 let _gbifKingdomFilter    = null;   // "Animalia" | "Plantae" | null
@@ -368,7 +365,6 @@ function initHillshadeOverlay() {
 
   const container = document.createElement('div');
   container.id = 'hillshade-gl';
-  container.style.opacity = '0';          // invisible from the start — no white-canvas flash
   document.getElementById('map-main').appendChild(container);
 
   const center = map.getCenter();
@@ -927,16 +923,12 @@ function buildGbifWhere() {
   return kingdom || decade;
 }
 
-// Show GBIF points only when the species panel is active AND the 'points' theme is selected.
-// Points must never bleed onto other panels (overview, timeline, etc.).
+// Show GBIF points when the 'points' theme is active — called on zoom + theme switch.
+// Heat-map zoom-out was disabled: the heatmap service query does not reliably return
+// parseable point geometries, so points are shown at all zoom levels instead.
 function updateGbifLayersByZoom() {
-  if (activeSpeciesTheme !== 'points' || activePanel !== 'species') {
-    // Ensure both GBIF layers are off if we're not on the species panel
-    if (gbifHeatLayer && map.hasLayer(gbifHeatLayer)) map.removeLayer(gbifHeatLayer);
-    if (LG.gbifPointsLayer && map.hasLayer(LG.gbifPointsLayer)) map.removeLayer(LG.gbifPointsLayer);
-    return;
-  }
-  // Species panel + points theme — ensure points are visible
+  if (activeSpeciesTheme !== 'points') return;
+  // Remove heat layer if it was ever added, then ensure points are on the map
   if (gbifHeatLayer && map.hasLayer(gbifHeatLayer)) map.removeLayer(gbifHeatLayer);
   if (LG.gbifPointsLayer && !map.hasLayer(LG.gbifPointsLayer)) LG.gbifPointsLayer.addTo(map);
 }
@@ -1265,7 +1257,7 @@ window.setBasemapVisible = function(key, visible) {
       break;
     case 'hillshade': {
       const glDiv = document.getElementById('hillshade-gl');
-      if (glDiv) glDiv.style.opacity = visible ? '0.75' : '0';
+      if (glDiv) glDiv.style.display = visible ? '' : 'none';
       break;
     }
     case 'vectortiles': {
@@ -1362,15 +1354,6 @@ window.setBasemapOpacity = function(key, opacity) {
 // ============================================================
 
 window.onPanelChange = function(panelId) {
-  const leavingSpecies = (activePanel === 'species' && panelId !== 'species');
-  activePanel = panelId;
-
-  // Strip GBIF points immediately when leaving the species panel
-  if (leavingSpecies) {
-    if (LG.gbifPointsLayer && map.hasLayer(LG.gbifPointsLayer)) map.removeLayer(LG.gbifPointsLayer);
-    if (gbifHeatLayer && map.hasLayer(gbifHeatLayer)) map.removeLayer(gbifHeatLayer);
-  }
-
   applyPanelLayers(panelId);
 
   // Show terrain cross-section explorer on overview panel, hide on others
