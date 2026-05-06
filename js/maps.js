@@ -1369,13 +1369,21 @@ window.onPanelChange = function(panelId) {
     if (LG.gbifPointsLayer && map.hasLayer(LG.gbifPointsLayer)) map.removeLayer(LG.gbifPointsLayer);
     if (gbifHeatLayer && map.hasLayer(gbifHeatLayer)) map.removeLayer(gbifHeatLayer);
   }
-  // Remove build-panel overlays when leaving (state preserved for next visit)
+  // Remove build-panel overlays when leaving (layer state preserved for next visit)
   if (_mapActivePanel === 'build' && panelId !== 'build') {
     if (typeof window.cleanupBuildPanel === 'function') window.cleanupBuildPanel();
+    // Restore Colombia close-up when leaving Build a Páramo
+    if (map) map.flyTo(COLOMBIA_CENTER, DEFAULT_ZOOM, { duration: 1.2, easeLinearity: 0.5 });
   }
   _mapActivePanel = panelId;
 
   applyPanelLayers(panelId);
+
+  // Build a Páramo: fly to wider regional view so users see the equatorial context
+  // (Colombia, Ecuador, Venezuela, Peru) and why páramos are geographically rare.
+  if (panelId === 'build') {
+    if (map) map.flyTo([3.5, -73], 4, { duration: 1.4, easeLinearity: 0.5 });
+  }
 
   // Show terrain cross-section explorer on overview panel, hide on others
   if (window.TP) {

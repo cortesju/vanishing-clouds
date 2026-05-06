@@ -23,8 +23,26 @@ const EQUATORIAL_LAYER_URL       = null;  // No raster published — rendered as
 const SUITABILITY_COMPOSITE_URL  = 'https://tiles.arcgis.com/tiles/ZIL9uO234SBBPGL7/arcgis/rest/services/Map1/MapServer';
 // Note: official páramo polygons are already loaded via PARAMO_FEATURE_URL in maps.js
 
+// ---- ArcGIS Online API key (optional) ----
+// The MapServer services above must be EITHER:
+//   A) Shared as "Everyone" (public) in ArcGIS Online — leave token null, no auth needed.
+//      ArcGIS Online → Content → [item] → Share → Everyone ✓ → Save
+//   B) A valid API key from developers.arcgis.com pasted as a string below.
+//
+// WHY THIS MATTERS: L.esri.tiledMapLayer() fetches ?f=json before loading tiles.
+// Private services return 499 Token Required on that call → layer silently fails.
+// We bypass this by using L.tileLayer() with the explicit ArcGIS tile URL pattern
+// (/tile/{z}/{y}/{x}), which goes straight to tile requests. Tiles still need to
+// be publicly accessible (or the token appended) to actually render.
+const ARCGIS_TOKEN = null;
+
 // Bounding box covering all of Colombia (used for placeholder rectangles)
 const _BP_BOUNDS = [[-4.2, -79.2], [12.5, -66.8]];
+
+// Global equatorial suitability band: 11°N → 5°S, worldwide longitude.
+// Used by the Equatorial Influence overlay to represent the tropical latitude zone.
+// Equator (0°) sits 5/16 = 31.25% from bottom = 68.75% from top of this bbox.
+const _EQ_BOUNDS = [[-5, -180], [11, 180]];
 
 // ============================================================
 // LAYER CONFIGURATION
@@ -98,30 +116,53 @@ let _bpInitialized    = false;
 // OVERLAY FACTORIES
 // ============================================================
 
-// Returns true for ArcGIS tiled MapServer URLs (no {z}/{x}/{y} template).
-// These are loaded with L.esri.tiledMapLayer() rather than L.tileLayer().
+// True for ArcGIS tiled MapServer URLs (ending in /MapServer, no {z} template).
 function _isEsriMapServer(url) {
   return typeof url === 'string' && /\/MapServer\/?$/.test(url);
 }
 
+// Build a Leaflet tile layer for an ArcGIS MapServer service.
+//
+// WHY NOT L.esri.tiledMapLayer():
+//   esri-leaflet GETs "{url}?f=json" before loading tiles. Private services
+//   return 499 Token Required on that call → the layer silently never loads.
+//
+// SOLUTION — bypass the metadata fetch:
+//   Use L.tileLayer() with the explicit ArcGIS tile URL pattern /tile/{z}/{y}/{x}.
+//   Note: ArcGIS row=y, col=x so the template is {z}/{y}/{x} NOT {z}/{x}/{y}.
+//
+// TOKEN SUPPORT:
+//   When ARCGIS_TOKEN is set, it is appended to every tile request so private
+//   services also work. When null, services must be publicly shared.
+function _makeAgoTileLayer(serviceUrl, opacity) {
+  const tokenSuffix = ARCGIS_TOKEN ? `?token=${ARCGIS_TOKEN}` : '';
+  return L.tileLayer(serviceUrl + '/tile/{z}/{y}/{x}' + tokenSuffix, {
+    opacity:        opacity,
+    tileSize:       256,
+    attribution:    '',
+    // maxNativeZoom: clamp tile requests to LODs the service has cached.
+    // ArcGIS Online regional rasters are typically cached to LOD 11–13.
+    // Leaflet scales up the highest cached tile if the map zooms past this.
+    maxNativeZoom:  11,
+    // Silently skip tiles outside the cached LOD range (no error tile shown).
+    errorTileUrl:   '',
+  });
+}
+
 function _createLayerOverlay(cfg) {
   if (cfg.url) {
-    // ArcGIS tiled MapServer — use Esri Leaflet (already loaded in index.html)
     if (_isEsriMapServer(cfg.url)) {
-      return L.esri.tiledMapLayer({ url: cfg.url, opacity: cfg.opacity });
+      return _makeAgoTileLayer(cfg.url, cfg.opacity);
     }
-    // Standard {z}/{x}/{y} tile service
     if (cfg.url.includes('{z}')) {
       return L.tileLayer(cfg.url, { opacity: cfg.opacity, attribution: '' });
     }
-    // Static image overlay
     return L.imageOverlay(cfg.url, _BP_BOUNDS, { opacity: cfg.opacity });
   }
   if (cfg.customFactory) {
-    // Special-purpose visualization (e.g. equatorial SVG gradient)
     return cfg.customFactory();
   }
-  // Fallback: translucent colored rectangle (used when no URL and no customFactory)
+  // Fallback: translucent colored rectangle
   return L.rectangle(_BP_BOUNDS, {
     color:       cfg.color,
     fillColor:   cfg.color,
@@ -131,36 +172,36 @@ function _createLayerOverlay(cfg) {
   });
 }
 
-// Equatorial influence — SVG gradient ImageOverlay.
-// Colombia spans -4.2°S → 12.5°N (16.7° total).
-// The equator (0°) sits 4.2/16.7 = 25.1% from the southern edge,
-// which is 74.9% ≈ 75% from the TOP of the image overlay.
-// The gradient peaks at that latitude and fades smoothly north and south.
+// Equatorial influence — worldwide SVG gradient ImageOverlay.
+// Bounds: _EQ_BOUNDS = [[-5°S, -180°], [11°N, 180°]] (full equatorial belt).
+// Equator (0°) sits 5/16 = 31.25% from bottom = 68.75% from top of the bbox.
+// The gradient peaks at ~69% from top and fades symmetrically north and south.
 function _createEquatorialOverlay() {
   const svg = [
-    '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="400">',
+    '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">',
     '  <defs>',
     '    <linearGradient id="eq" x1="0" y1="0" x2="0" y2="1">',
-    // 12.5°N (top) — barely any tropical influence at Colombia's northern tip
-    '      <stop offset="0%"   stop-color="#C8A840" stop-opacity="0.00"/>',
-    '      <stop offset="20%"  stop-color="#C8A840" stop-opacity="0.03"/>',
-    '      <stop offset="42%"  stop-color="#C8A840" stop-opacity="0.09"/>',
-    '      <stop offset="60%"  stop-color="#C8A840" stop-opacity="0.17"/>',
-    // ~3°N — approaching equatorial belt
-    '      <stop offset="70%"  stop-color="#D4AE38" stop-opacity="0.24"/>',
-    // ~0° equator — peak suitability
-    '      <stop offset="75%"  stop-color="#D4AE38" stop-opacity="0.30"/>',
-    // 2–4°S — still tropical, trailing off slightly south of equator
-    '      <stop offset="85%"  stop-color="#C8A840" stop-opacity="0.22"/>',
-    '      <stop offset="100%" stop-color="#B89830" stop-opacity="0.10"/>',
+    // 11°N — top edge, minimal tropical warmth
+    '      <stop offset="0%"   stop-color="#D4AE38" stop-opacity="0.00"/>',
+    '      <stop offset="20%"  stop-color="#C8A840" stop-opacity="0.05"/>',
+    '      <stop offset="45%"  stop-color="#C8A840" stop-opacity="0.13"/>',
+    // ~1.5°N — approaching equatorial peak
+    '      <stop offset="60%"  stop-color="#D4AE38" stop-opacity="0.22"/>',
+    // 0° equator — maximum suitability (68.75% from top ≈ 69%)
+    '      <stop offset="69%"  stop-color="#D4AE38" stop-opacity="0.30"/>',
+    // 2°S — still highly tropical
+    '      <stop offset="78%"  stop-color="#C8A840" stop-opacity="0.22"/>',
+    '      <stop offset="90%"  stop-color="#C8A840" stop-opacity="0.11"/>',
+    // 5°S — bottom edge, trailing off
+    '      <stop offset="100%" stop-color="#B89830" stop-opacity="0.00"/>',
     '    </linearGradient>',
     '  </defs>',
-    '  <rect width="100" height="400" fill="url(#eq)"/>',
+    '  <rect width="100" height="100" fill="url(#eq)"/>',
     '</svg>',
   ].join('');
 
   const dataUrl = 'data:image/svg+xml;base64,' + btoa(svg);
-  return L.imageOverlay(dataUrl, _BP_BOUNDS, {
+  return L.imageOverlay(dataUrl, _EQ_BOUNDS, {
     opacity:     1.0,
     interactive: false,
     className:   'bp-equatorial-overlay',
@@ -169,9 +210,8 @@ function _createEquatorialOverlay() {
 
 function _createCompositeOverlay() {
   if (SUITABILITY_COMPOSITE_URL) {
-    // ArcGIS tiled MapServer (Map1 — final páramo suitability composite)
     if (_isEsriMapServer(SUITABILITY_COMPOSITE_URL)) {
-      return L.esri.tiledMapLayer({ url: SUITABILITY_COMPOSITE_URL, opacity: 0.88 });
+      return _makeAgoTileLayer(SUITABILITY_COMPOSITE_URL, 0.88);
     }
     if (SUITABILITY_COMPOSITE_URL.includes('{z}')) {
       return L.tileLayer(SUITABILITY_COMPOSITE_URL, { opacity: 0.88, attribution: '' });
