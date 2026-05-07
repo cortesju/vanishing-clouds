@@ -85,10 +85,10 @@ const BUILD_LAYERS_CONFIG = [
   {
     id:      'seasonality',
     icon:    '☁',
-    name:    'Climate Seasonality',
-    label:   'Unique tropical alpine conditions',
-    desc:    'Tropical latitude means no astronomical winter — yet high altitude brings intense UV radiation, thin air, and nightly frost. This paradox of simultaneous extremes, found nowhere else on Earth, shaped every organism living in the páramo into something wholly original.',
-    color:   '#6A1B9A',   // purple — atmosphere
+    name:    'Climate Match Score',
+    label:   'Temperature + precipitation overlap',
+    desc:    'This layer combines the temperature suitability score and the precipitation suitability score to show where both climate conditions align for páramo formation. High scores mean a stronger match between the ideal cool temperature range and the ideal moisture range — not simply more climate or more seasonality.',
+    color:   '#6A1B9A',   // purple — combined climate index
     url:     CLIMATE_LAYER_URL,
     opacity: 0.82,
   },
@@ -136,18 +136,20 @@ const BP_LEGEND_CONFIG = {
     desc:   'Score 5 = optimal páramo thermal range (2–10 °C). Too warm or too cold scores 1.',
   },
   // Precipitation Score: pale yellow/tan → green → blue-teal (matches AGO symbology)
+  // Score 5 = ideal páramo moisture niche, NOT simply the wettest areas.
   precipitation: {
-    title:  '🌧 Precipitation Score',
+    title:  '🌧 Moisture Suitability Score',
     bar:    'linear-gradient(to right, #FFF9C4, #81C784, #0277BD)',
-    labels: ['1 · Dry', '3 · Moderate', '5 · Very wet'],
-    desc:   'Score 5 = strong cloud-moisture suitability (700–3,000 mm yr⁻¹). Arid zones score 1.',
+    labels: ['1 · Poor match', '3 · Moderate', '5 · Ideal range'],
+    desc:   'Higher scores indicate precipitation closer to the modeled páramo moisture niche. Not simply the wettest areas — places that are too dry or excessively wet score lower.',
   },
-  // Climate Score: near-black → brown → bright green (matches AGO ClimateScore ramp)
+  // Climate Match Score: near-black → brown → bright green (matches AGO ClimateScore ramp)
+  // This is the combined temperature + precipitation suitability index.
   seasonality: {
-    title:  '☁ Climate Score',
+    title:  '☁ Climate Match Score',
     bar:    'linear-gradient(to right, #1A1A1A, #795548, #2E7D32)',
-    labels: ['1 · Low', '3 · Moderate', '5 · Highest'],
-    desc:   'Score 5 = highest combined temperature + precipitation alignment for páramo conditions.',
+    labels: ['1 · Low match', '3 · Moderate', '5 · Highest match'],
+    desc:   'Higher scores show where mean annual temperature and precipitation conditions overlap most closely with the modeled páramo climate niche.',
   },
   // Final Suitability Composite: dark navy → gray → bright green (matches AGO Map1 ramp)
   // High-suitability areas render as bright green; callout markers identify major clusters.

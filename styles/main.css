@@ -2594,6 +2594,42 @@ body.terrain-active #side-panel {
   opacity: 0.65;
 }
 
+/* ── Climate Match Score — derived-layer formula display ── */
+.bp-layer-formula {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 8px 0 4px;
+}
+
+.bp-formula-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-medium);
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  border-radius: var(--radius-pill);
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.bp-formula-chip.bp-formula-result {
+  background: rgba(106, 27, 154, 0.08);
+  border-color: rgba(106, 27, 154, 0.22);
+  color: #4A148C;
+}
+
+.bp-formula-op {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-light);
+  flex-shrink: 0;
+}
+
 /* ── iOS-style toggle switch ── */
 .bp-switch {
   position: relative;

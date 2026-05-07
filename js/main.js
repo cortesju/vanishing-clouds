@@ -336,14 +336,14 @@ const PANEL_TEMPLATES = {
             <div class="bp-layer-icon" style="background:rgba(21,101,192,0.13);color:#0D47A1">🌧</div>
             <div class="bp-layer-meta">
               <span class="bp-layer-name">Precipitation & Moisture</span>
-              <span class="bp-layer-label">Wet, cloudy, humid · 700 – 3,000 mm / yr</span>
+              <span class="bp-layer-label">Ideal moisture range · Not just the wettest areas</span>
             </div>
-            <label class="bp-switch" title="Toggle precipitation layer on map">
+            <label class="bp-switch" title="Toggle precipitation & moisture layer on map">
               <input type="checkbox" id="bp-toggle-precipitation">
               <span class="bp-switch-track"><span class="bp-switch-thumb"></span></span>
             </label>
           </div>
-          <p class="bp-layer-desc">Persistent cloud cover and high annual rainfall keep páramo soils perpetually saturated. Frailejones capture cloud moisture through their woolly leaves and channel it into Colombia's river systems, supplying water to 48 million people downstream.</p>
+          <p class="bp-layer-desc">Páramos need persistent moisture, cloud cover, and rainfall — but the model looks for an ideal moisture range, not simply the wettest places on Earth. Higher scores indicate precipitation conditions that better match páramo ecosystems. Areas that are too dry or excessively wet can receive lower suitability scores.</p>
           <div class="bp-layer-swatch"></div>
         </div>
 
@@ -351,15 +351,22 @@ const PANEL_TEMPLATES = {
           <div class="bp-layer-card-header">
             <div class="bp-layer-icon" style="background:rgba(106,27,154,0.13);color:#4A148C">☁</div>
             <div class="bp-layer-meta">
-              <span class="bp-layer-name">Climate Seasonality</span>
-              <span class="bp-layer-label">Unique tropical alpine conditions</span>
+              <span class="bp-layer-name">Climate Match Score</span>
+              <span class="bp-layer-label">Temperature + precipitation overlap</span>
             </div>
-            <label class="bp-switch" title="Toggle climate seasonality layer on map">
+            <label class="bp-switch" title="Toggle climate match score layer on map">
               <input type="checkbox" id="bp-toggle-seasonality">
               <span class="bp-switch-track"><span class="bp-switch-thumb"></span></span>
             </label>
           </div>
-          <p class="bp-layer-desc">Tropical latitude means no astronomical winter — yet high altitude brings intense UV radiation, thin air, and nightly frost. This paradox of simultaneous extremes, found nowhere else on Earth, shaped every organism living in the páramo into something wholly original.</p>
+          <p class="bp-layer-desc">This layer combines the temperature suitability score and the precipitation suitability score to show where both climate conditions align for páramo formation. High scores do not mean "more climate" or "more seasonality" — they mean the area has a stronger match between the ideal cool temperature range and the ideal moisture range for páramo ecosystems.</p>
+          <div class="bp-layer-formula">
+            <span class="bp-formula-chip">🌡 Temperature</span>
+            <span class="bp-formula-op">+</span>
+            <span class="bp-formula-chip">🌧 Precipitation</span>
+            <span class="bp-formula-op">=</span>
+            <span class="bp-formula-chip bp-formula-result">☁ Climate Match</span>
+          </div>
           <div class="bp-layer-swatch"></div>
         </div>
 
