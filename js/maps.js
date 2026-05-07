@@ -148,6 +148,7 @@ let terrainLayer    = null;   // L.esri.tiledMapLayer — Colombia terrain basem
 let vectorTileLayer = null;   // MapLibre GL map — base vector tile overlay (labels/roads)
 let detailTileLayer = null;   // MapLibre GL map — detail vector tiles (water/urban, zoom-gated)
 let hillshadeMapGL  = null;   // MapLibre GL map — hillshade overlay
+let _zoomControl    = null;   // Leaflet zoom control — stored so it can be repositioned
 
 // Detail layer user-controlled state (separate from zoom-gate visibility)
 let _detailEnabled = true;
@@ -202,8 +203,9 @@ const DATA = {
 // Per-panel default visible layers
 const PANEL_LAYERS = {
   overview:  ['paramoFill', 'paramoOutline'],
-  // build: páramo outline only — user stacks environmental layers interactively via build-paramo.js
-  build:     ['paramoOutline'],
+  // build: no base layers — user stacks environmental layers interactively via build-paramo.js.
+  // The compare toggle in the panel can optionally surface paramoFill.
+  build:     [],
   species:   ['paramoOutline', 'gbifPointsLayer'],   // GBIF points are the default theme
   timeline:  ['paramoOutline', 'speciesPoints'],
   threats:   ['paramoOutline', 'agriculture', 'fire'],
@@ -312,8 +314,9 @@ function initMap() {
   // ---- LAYER 2: Hillshade — dedicated MapLibre GL canvas at z=202 ----
   initHillshadeOverlay();
 
-  // Zoom control — bottom-right, above data strip
-  L.control.zoom({ position: 'bottomright' }).addTo(map);
+  // Zoom control — bottom-right by default; moved to top-right inside Build a Páramo
+  // so it does not overlap the floating layer legend.
+  _zoomControl = L.control.zoom({ position: 'bottomright' }).addTo(map);
 
   // Scale bar — metric (km) + imperial (mi), bottom-left
   L.control.scale({
@@ -1374,6 +1377,12 @@ window.onPanelChange = function(panelId) {
     if (typeof window.cleanupBuildPanel === 'function') window.cleanupBuildPanel();
     // Restore Colombia close-up when leaving Build a Páramo
     if (map) map.flyTo(COLOMBIA_CENTER, DEFAULT_ZOOM, { duration: 1.2, easeLinearity: 0.5 });
+    // Move zoom control back to bottom-right and remove build-mode class
+    if (_zoomControl && map) {
+      _zoomControl.remove();
+      _zoomControl = L.control.zoom({ position: 'bottomright' }).addTo(map);
+    }
+    document.getElementById('map-main')?.classList.remove('map-build-mode');
   }
   _mapActivePanel = panelId;
 
@@ -1383,6 +1392,13 @@ window.onPanelChange = function(panelId) {
   // (Colombia, Ecuador, Venezuela, Peru) and why páramos are geographically rare.
   if (panelId === 'build') {
     if (map) map.flyTo([3.5, -73], 4, { duration: 1.4, easeLinearity: 0.5 });
+    // Move zoom control to top-right so it does not cover the floating legend.
+    // The map-build-mode class pushes the topright corner below the nav bar.
+    if (_zoomControl && map) {
+      _zoomControl.remove();
+      _zoomControl = L.control.zoom({ position: 'topright' }).addTo(map);
+    }
+    document.getElementById('map-main')?.classList.add('map-build-mode');
   }
 
   // Show terrain cross-section explorer on overview panel, hide on others
