@@ -315,9 +315,9 @@ const PANEL_TEMPLATES = {
           <div class="bp-layer-swatch"></div>
         </div>
 
-        <div class="bp-layer-card" id="bp-card-temperature" style="--layer-color:#3949AB">
+        <div class="bp-layer-card" id="bp-card-temperature" style="--layer-color:#388E3C">
           <div class="bp-layer-card-header">
-            <div class="bp-layer-icon" style="background:rgba(57,73,171,0.13);color:#283593">🌡</div>
+            <div class="bp-layer-icon" style="background:rgba(56,142,60,0.13);color:#1B5E20">🌡</div>
             <div class="bp-layer-meta">
               <span class="bp-layer-name">Temperature</span>
               <span class="bp-layer-label">Cold but not permanently frozen · 2 – 10 °C</span>
@@ -347,22 +347,6 @@ const PANEL_TEMPLATES = {
           <div class="bp-layer-swatch"></div>
         </div>
 
-        <div class="bp-layer-card" id="bp-card-equatorial" style="--layer-color:#C8A840">
-          <div class="bp-layer-card-header">
-            <div class="bp-layer-icon" style="background:rgba(200,168,64,0.13);color:#8B6914">🌐</div>
-            <div class="bp-layer-meta">
-              <span class="bp-layer-name">Equatorial Influence</span>
-              <span class="bp-layer-label">Tropical latitude · Near the equator</span>
-            </div>
-            <label class="bp-switch" title="Toggle equatorial influence layer on map">
-              <input type="checkbox" id="bp-toggle-equatorial">
-              <span class="bp-switch-track"><span class="bp-switch-thumb"></span></span>
-            </label>
-          </div>
-          <p class="bp-layer-desc">Páramos exist where extreme elevation meets tropical latitude. Near the equator, solar radiation remains intense year-round and seasonal variation is low. When these tropical conditions are lifted above 3,000 m in the Andes, unique alpine ecosystems emerge with dramatic day-night temperature swings, persistent cloud formation, and specialized biodiversity found nowhere else on Earth. Highest suitability lies between 11°N and 5°S.</p>
-          <div class="bp-layer-swatch"></div>
-        </div>
-
         <div class="bp-layer-card" id="bp-card-seasonality" style="--layer-color:#6A1B9A">
           <div class="bp-layer-card-header">
             <div class="bp-layer-icon" style="background:rgba(106,27,154,0.13);color:#4A148C">☁</div>
@@ -381,12 +365,21 @@ const PANEL_TEMPLATES = {
 
       </div><!-- /.bp-layers-list -->
 
+      <!-- Equatorial Influence — permanent context layer, not a toggle -->
+      <div class="bp-eq-context-card">
+        <div class="bp-eq-context-icon">🌐</div>
+        <div class="bp-eq-context-text">
+          <strong>Equatorial Influence</strong>
+          <p>Páramos exist only where extreme Andean elevation meets equatorial solar patterns. This warm gold band — always visible on the map — marks the tropical latitude zone (11°N – 5°S) where year-round intense solar radiation makes high-altitude páramo conditions possible. The equator line shows where influence is highest.</p>
+        </div>
+      </div>
+
       <div class="panel-divider"></div>
 
       <!-- Suitability composite -->
       <div class="bp-composite-section">
         <span class="species-section-label">SUITABILITY COMPOSITE</span>
-        <p class="bp-composite-desc">Combine your active layers into a single suitability surface. Areas meeting more conditions appear in warmer gold tones. Activate at least two layers to unlock.</p>
+        <p class="bp-composite-desc">Combine your active layers into a single modeled suitability surface. <strong>Bright green areas</strong> indicate the highest suitability — Colombia's páramo belt and equivalent zones worldwide. Activate at least two layers to unlock.</p>
         <button id="bp-composite-btn" class="bp-composite-btn" disabled title="Activate at least 2 environmental layers first">
           <span class="bp-composite-icon">◎</span>
           Show Suitability Composite
@@ -412,12 +405,6 @@ const PANEL_TEMPLATES = {
           <div class="bp-suit-ramp"></div>
           <span class="bp-suit-label">High suitability</span>
         </div>
-      </div>
-
-      <!-- Equatorial note: SVG gradient is the designed visualization for this layer -->
-      <div class="bp-placeholder-notice">
-        <span class="bp-placeholder-icon">🌐</span>
-        <span>The <strong>Equatorial Influence</strong> layer renders a calculated latitudinal gradient — highest suitability near the equator, fading north. Replace <code>EQUATORIAL_LAYER_URL</code> in <code>js/build-paramo.js</code> to use a published raster instead.</span>
       </div>
 
     </div>

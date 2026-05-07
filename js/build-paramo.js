@@ -47,6 +47,9 @@ const _EQ_BOUNDS = [[-5, -180], [11, 180]];
 // ============================================================
 // LAYER CONFIGURATION
 // Each entry maps to one interactive card in the panel.
+// NOTE: Equatorial Influence is NOT listed here — it is a permanent
+//       ambient layer added automatically when entering the Build tab.
+//       See _bpEquatorialLayer and initBuildPanel / wireBuildPanel.
 // ============================================================
 const BUILD_LAYERS_CONFIG = [
   {
@@ -65,7 +68,7 @@ const BUILD_LAYERS_CONFIG = [
     name:    'Temperature',
     label:   'Cold but not permanently frozen · 2 – 10 °C',
     desc:    'Mean annual temperatures between 2 °C and 10 °C define the thermal niche of páramo life. Unlike polar environments, páramos experience freeze-thaw cycles daily, not seasonally — temperatures can swing 20 °C in 24 hours, compressing a whole year of climate variation into a single day.',
-    color:   '#3949AB',   // indigo — cold
+    color:   '#388E3C',   // green — matches AGO MEANtemScore symbology
     url:     MEAN_TEMP_LAYER_URL,
     opacity: 0.82,
   },
@@ -80,17 +83,6 @@ const BUILD_LAYERS_CONFIG = [
     opacity: 0.82,
   },
   {
-    id:            'equatorial',
-    icon:          '🌐',
-    name:          'Equatorial Influence',
-    label:         'Tropical latitude · Near the equator',
-    desc:          'Páramos exist where extreme elevation meets tropical latitude. Near the equator, solar radiation remains intense year-round and seasonal variation is low. When these tropical conditions are lifted above 3,000 m in the Andes, unique alpine ecosystems emerge with dramatic day-night temperature swings, persistent cloud formation, and specialized biodiversity found nowhere else on Earth.',
-    color:         '#C8A840',   // warm gold — solar / equatorial
-    url:           EQUATORIAL_LAYER_URL,
-    opacity:       1.0,         // SVG handles its own opacity via gradient stops
-    customFactory: _createEquatorialOverlay,  // hoisted function — always available
-  },
-  {
     id:      'seasonality',
     icon:    '☁',
     name:    'Climate Seasonality',
@@ -100,6 +92,17 @@ const BUILD_LAYERS_CONFIG = [
     url:     CLIMATE_LAYER_URL,
     opacity: 0.82,
   },
+];
+
+// Highest-suitability cluster locations for composite callout markers.
+// These are shown as small labelled dots when the composite layer is active
+// to help users identify real-world equivalents of the highest-score zones.
+const _BP_CALLOUT_CLUSTERS = [
+  { latlng: [5.0,  -74.5], label: 'Northern Andes' },
+  { latlng: [-0.5, -78.5], label: 'Ecuador' },
+  { latlng: [-9.5, -75.5], label: 'Peru' },
+  { latlng: [0.3,   35.0], label: 'East Africa' },
+  { latlng: [-4.0, 137.0], label: 'New Guinea' },
 ];
 
 // ============================================================
@@ -115,18 +118,20 @@ const _SCORE_LAYER_IDS = ['elevation', 'temperature', 'precipitation', 'seasonal
 // ============================================================
 // Legend color ramps are matched to the ArcGIS Pro symbology for each layer.
 // All score layers use 1 (low suitability) → 5 (highest suitability).
+// Equatorial Influence has no legend entry — it is a permanent ambient context layer.
 const BP_LEGEND_CONFIG = {
-  // DEM Score: pale aqua/cyan → teal → dark teal (matches AGO symbology)
+  // DEM Score: pale aqua/cyan → teal → dark teal (matches AGO DEM Score ramp)
   elevation: {
     title:  '⛰ Elevation Score',
     bar:    'linear-gradient(to right, #B2EBF2, #26C6DA, #00695C)',
     labels: ['1 · Low', '3 · Moderate', '5 · Optimal'],
     desc:   'Score 5 = optimal Andean highland zone (≥ 2,800 m above the tree line).',
   },
-  // Mean Annual Temperature Score: pale gray → steel blue → deep indigo
+  // Mean Annual Temperature Score: light green → medium green → dark green
+  // Matches AGO MEANtemScore symbology (green color scale)
   temperature: {
     title:  '🌡 Temperature Score',
-    bar:    'linear-gradient(to right, #ECEFF1, #5C6BC0, #1A237E)',
+    bar:    'linear-gradient(to right, #E8F5E9, #66BB6A, #1B5E20)',
     labels: ['1 · Low', '3 · Moderate', '5 · Optimal'],
     desc:   'Score 5 = optimal páramo thermal range (2–10 °C). Too warm or too cold scores 1.',
   },
@@ -137,26 +142,20 @@ const BP_LEGEND_CONFIG = {
     labels: ['1 · Dry', '3 · Moderate', '5 · Very wet'],
     desc:   'Score 5 = strong cloud-moisture suitability (700–3,000 mm yr⁻¹). Arid zones score 1.',
   },
-  // Climate Score: black/dark brown → olive/brown → bright green (matches AGO symbology)
+  // Climate Score: near-black → brown → bright green (matches AGO ClimateScore ramp)
   seasonality: {
     title:  '☁ Climate Score',
     bar:    'linear-gradient(to right, #1A1A1A, #795548, #2E7D32)',
     labels: ['1 · Low', '3 · Moderate', '5 · Highest'],
     desc:   'Score 5 = highest combined temperature + precipitation alignment for páramo conditions.',
   },
-  // Equatorial Influence: warm gold gradient — not an AGO raster, generated SVG overlay
-  equatorial: {
-    title:  '🌐 Equatorial Influence',
-    bar:    'linear-gradient(to right, rgba(200,168,64,0.06), rgba(200,168,64,0.40), rgba(200,168,64,0.06))',
-    labels: ['Far from equator', 'Tropical belt', 'Equator 0°'],
-    desc:   'Highest influence at 0° latitude where tropical solar radiation is most intense year-round.',
-  },
-  // Final Suitability Composite: dark navy → gray/tan → yellow/gold (matches AGO symbology)
+  // Final Suitability Composite: dark navy → gray → bright green (matches AGO Map1 ramp)
+  // High-suitability areas render as bright green; callout markers identify major clusters.
   composite: {
-    title:  '◎ Páramo Suitability',
-    bar:    'linear-gradient(to right, #0A1628, #90A4AE, #F9A825)',
+    title:  '◎ Páramo Suitability Composite',
+    bar:    'linear-gradient(to right, #0A1628, #7B9BAA, #27AE60)',
     labels: ['1 · Low', '3 · Moderate', '5 · Highest'],
-    desc:   'Combined score — areas where all five conditions align for optimal páramo formation.',
+    desc:   'Higher scores show where elevation, cool temperatures, moisture, climate, and equatorial influence combine. Bright green = highest modeled suitability.',
   },
 };
 
@@ -172,6 +171,8 @@ let _bpInitialized      = false;
 let _bpActiveScoreLayer = null;    // id of the currently-active score layer, or null
 let _bpLegendEl         = null;    // floating legend DOM element
 let _bpBasemapState     = null;    // snapshot of basemap visibility before simplification
+let _bpEquatorialLayer  = null;    // permanent equatorial context overlay (not a toggle)
+let _bpCompositeCallouts = null;   // DivIcon cluster markers shown with composite layer
 
 // ============================================================
 // OVERLAY FACTORIES
@@ -319,6 +320,25 @@ function _createCompositeOverlay() {
   });
 }
 
+// Cluster callout markers for the composite view.
+// Small labelled dots placed on the major highest-suitability zones so users
+// can orient themselves without the map becoming a noisy heatmap.
+function _createCompositeCallouts() {
+  const markers = _BP_CALLOUT_CLUSTERS.map(({ latlng, label }) =>
+    L.marker(latlng, {
+      icon: L.divIcon({
+        className:  'bp-composite-callout',
+        html:       `<span class="bp-callout-dot"></span><span class="bp-callout-label">${label}</span>`,
+        iconSize:   null,
+        iconAnchor: [6, 6],
+      }),
+      interactive: false,
+      keyboard:    false,
+    })
+  );
+  return L.layerGroup(markers);
+}
+
 // ============================================================
 // BASEMAP SIMPLIFICATION
 // When a score layer (or the composite) is active, the detailed
@@ -412,11 +432,11 @@ function _hideLegend() {
 }
 
 // Determine which legend to show based on current state:
-// composite > active score layer > equatorial > nothing
+// composite > active score layer > nothing
+// Equatorial is now a permanent ambient layer with no toggleable legend.
 function _updateLegendForCurrentState() {
   if (_bpCompositeOn) { _showLegend('composite'); return; }
   if (_bpActiveScoreLayer) { _showLegend(_bpActiveScoreLayer); return; }
-  if (_bpLayerEls['equatorial']?.active) { _showLegend('equatorial'); return; }
   _hideLegend();
 }
 
@@ -518,6 +538,9 @@ function _setComposite(on) {
     }
     // Composite is also a raster — simplify the basemap
     _simplifyBasemap();
+    // Show cluster callout markers so users can identify major suitability zones
+    if (!_bpCompositeCallouts) _bpCompositeCallouts = _createCompositeCallouts();
+    if (!_bpMap.hasLayer(_bpCompositeCallouts)) _bpCompositeCallouts.addTo(_bpMap);
     // UI
     if (btn) {
       btn.classList.add('active');
@@ -539,6 +562,10 @@ function _setComposite(on) {
     });
     // Restore basemap if no score layers are active either
     if (!_needsSimplifiedBasemap()) _restoreBasemap();
+    // Remove cluster callout markers
+    if (_bpCompositeCallouts && _bpMap.hasLayer(_bpCompositeCallouts)) {
+      _bpMap.removeLayer(_bpCompositeCallouts);
+    }
     // UI
     if (btn) {
       btn.classList.remove('active');
@@ -646,7 +673,13 @@ function wireBuildPanel() {
     interp.classList.toggle('hidden', !_bpCompositeOn);
   }
 
-  // Restore legend for current state (score layer, equatorial, composite, or none)
+  // Ensure the permanent equatorial overlay is on the map every time the panel loads
+  // (it is removed by cleanupBuildPanel when navigating away)
+  if (_bpEquatorialLayer && _bpMap && !_bpMap.hasLayer(_bpEquatorialLayer)) {
+    _bpEquatorialLayer.addTo(_bpMap);
+  }
+
+  // Restore legend for current state (score layer, composite, or none)
   _updateLegendForCurrentState();
 
   _updatePanelUI();
@@ -667,6 +700,11 @@ function initBuildPanel(mapInstance) {
     };
   });
 
+  // Create the permanent equatorial overlay once (added to map in wireBuildPanel)
+  if (!_bpEquatorialLayer) {
+    _bpEquatorialLayer = _createEquatorialOverlay();
+  }
+
   _bpInitialized = true;
 }
 
@@ -684,6 +722,16 @@ function cleanupBuildPanel() {
 
   if (_bpCompositeLayer && _bpMap.hasLayer(_bpCompositeLayer)) {
     _bpMap.removeLayer(_bpCompositeLayer);
+  }
+
+  // Remove composite callout markers
+  if (_bpCompositeCallouts && _bpMap.hasLayer(_bpCompositeCallouts)) {
+    _bpMap.removeLayer(_bpCompositeCallouts);
+  }
+
+  // Remove the permanent equatorial layer (re-added when user returns)
+  if (_bpEquatorialLayer && _bpMap.hasLayer(_bpEquatorialLayer)) {
+    _bpMap.removeLayer(_bpEquatorialLayer);
   }
 
   // Remove paramoFill if compare was on (maps.js will re-add per PANEL_LAYERS for next panel)

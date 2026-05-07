@@ -2779,6 +2779,75 @@ body.terrain-active #side-panel {
   color: var(--text-dark);
 }
 
+/* ── Equatorial Influence context card (permanent, non-toggleable) ── */
+.bp-eq-context-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: rgba(200, 168, 64, 0.07);
+  border: 1px solid rgba(200, 168, 64, 0.25);
+  border-left: 3px solid #C8A840;
+  border-radius: var(--radius);
+  padding: 0.75rem 0.9rem;
+  margin-top: 0.75rem;
+}
+
+.bp-eq-context-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.bp-eq-context-text strong {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #8B6914;
+  margin-bottom: 3px;
+}
+
+.bp-eq-context-text p {
+  font-size: 0.76rem;
+  color: var(--text-medium);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ── Composite callout cluster markers ── */
+.bp-composite-callout {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  pointer-events: none;
+}
+
+.bp-callout-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(27, 94, 59, 0.75);
+  border: 1.5px solid rgba(255, 255, 255, 0.65);
+  flex-shrink: 0;
+  box-shadow: 0 0 4px rgba(27, 94, 59, 0.50);
+}
+
+.bp-callout-label {
+  font-size: 9.5px;
+  font-weight: 600;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: rgba(10, 60, 30, 0.90);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  text-shadow:
+    0 1px 3px rgba(255, 255, 255, 0.95),
+    0 0  8px rgba(255, 255, 255, 0.80);
+}
+
 /* ── Zoom control repositioning in Build a Páramo mode ──
    When #map-main has .map-build-mode, the Leaflet zoom control is re-added
    at 'topright' by maps.js. We push it below the nav bar (--nav-h) so it
