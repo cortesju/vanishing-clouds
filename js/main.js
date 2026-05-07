@@ -386,8 +386,8 @@ const PANEL_TEMPLATES = {
       <!-- Suitability composite -->
       <div class="bp-composite-section">
         <span class="species-section-label">SUITABILITY COMPOSITE</span>
-        <p class="bp-composite-desc">Combine your active layers into a single modeled suitability surface. <strong>Bright green areas</strong> indicate the highest suitability — Colombia's páramo belt and equivalent zones worldwide. Activate at least two layers to unlock.</p>
-        <button id="bp-composite-btn" class="bp-composite-btn" disabled title="Activate at least 2 environmental layers first">
+        <p class="bp-composite-desc">View the full modeled suitability surface. <strong>Bright green areas</strong> indicate the highest suitability — Colombia's páramo belt and equivalent zones worldwide. Activate any environmental layer to unlock.</p>
+        <button id="bp-composite-btn" class="bp-composite-btn" disabled title="Activate an environmental layer first">
           <span class="bp-composite-icon">◎</span>
           Show Suitability Composite
         </button>

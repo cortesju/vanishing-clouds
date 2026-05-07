@@ -454,12 +454,14 @@ function _updatePanelUI() {
     badge.dataset.count = count;
   }
 
-  // Composite button — enabled when ≥2 layers are active (or already on)
+  // Composite button — enabled once any score layer is active (or already on).
+  // Previously required ≥2 layers, but score layers are now mutually exclusive
+  // (one-at-a-time), so count can never exceed 1. Threshold lowered to 1.
   const btn = document.getElementById('bp-composite-btn');
   if (btn) {
-    const canComposite = count >= 2 || _bpCompositeOn;
+    const canComposite = count >= 1 || _bpCompositeOn;
     btn.disabled = !canComposite;
-    btn.title = canComposite ? '' : 'Activate at least 2 environmental layers first';
+    btn.title = canComposite ? '' : 'Activate an environmental layer first';
   }
 }
 
