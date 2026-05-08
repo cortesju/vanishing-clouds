@@ -77,9 +77,10 @@ const URBAN_RISK_PARAMOS_URL = 'https://services1.arcgis.com/ZIL9uO234SBBPGL7/ar
 // Shown as a subtle underlay in "Threat category by year" mode only.
 const PARAMO_REFERENCE_URL = 'https://services1.arcgis.com/ZIL9uO234SBBPGL7/arcgis/rest/services/Paramos_de_Colombia_CopyFeatures/FeatureServer/0';
 
-// ── Fire pressure (placeholder — data added later) ──
-const FIRE_DENSITY_LAYER_URL   = null;
-const FIRE_FREQUENCY_LAYER_URL = null;
+// ── Fire pressure — real ArcGIS Online services ──
+const FIRE_DENSITY_KERNEL_URL  = 'https://tiles.arcgis.com/tiles/ZIL9uO234SBBPGL7/arcgis/rest/services/fire_density_kernel/MapServer';
+const FIRE_POINTS_URL          = 'https://services1.arcgis.com/ZIL9uO234SBBPGL7/arcgis/rest/services/fire_points_paramo/FeatureServer';
+const FIRE_FREQUENCY_PARAMO_URL = 'https://services1.arcgis.com/ZIL9uO234SBBPGL7/arcgis/rest/services/fire_frequency_by_paramo/FeatureServer';
 
 // ============================================================
 // CONFIGURATION
@@ -194,6 +195,29 @@ const TH_URBAN_RISK_CLASSES = [
 ];
 const TH_URBAN_RISK_NODATA = { color: '#D1D5DB', label: 'No data', border: true };
 
+// Fire frequency by páramo — 5-class natural-breaks ramp.
+// Field: fire_density_km2 (fire events per km² over the study period).
+// Colors match ArcGIS Pro sequential ramp: light orange → dark red.
+const TH_FIRE_FREQ_BREAKS = [
+  { min: 0,      max: 0.5,   color: '#FFF7EC', label: 'Very low',  border: true },
+  { min: 0.5,    max: 1.5,   color: '#FDD49E', label: 'Low' },
+  { min: 1.5,    max: 3.0,   color: '#FC8D59', label: 'Moderate' },
+  { min: 3.0,    max: 6.0,   color: '#E34A33', label: 'High' },
+  { min: 6.0,    max: Infinity, color: '#B30000', label: 'Very high' },
+];
+const TH_FIRE_FREQ_NODATA = { color: '#D1D5DB', label: 'No data', border: true };
+
+// Fire density kernel legend — matches the graduated ramp of the MapServer raster.
+// Entries listed from transparent (lowest) to darkest red (highest density).
+const TH_FIRE_DENSITY_LEGEND = [
+  { color: 'transparent', label: 'No fire detected', border: true },
+  { color: '#FEE5D9', label: 'Very low density' },
+  { color: '#FCBBA1', label: 'Low density' },
+  { color: '#FB6A4A', label: 'Moderate density' },
+  { color: '#CB181D', label: 'High density' },
+  { color: '#7F0000', label: 'Very high density' },
+];
+
 // ============================================================
 // MODULE STATE
 // Persists across panel visits — re-entering restores last state.
@@ -224,6 +248,16 @@ let _thLegendEl        = null;
 
 // Basemap simplification state (captured before hiding hillshade)
 let _thBasemapState    = null;
+
+// ── Fire pressure state ───────────────────────────────────────────────────
+let _thFireMode        = 'density';  // 'density' | 'points' | 'frequency'
+let _thFireYear        = 2024;       // current year (integer, 2012–2024)
+let _thFirePlayInterval = null;      // setInterval handle for animation
+let _thFireDateField   = null;       // detected date/year field name in fire_points_paramo
+let _thFireDateFieldType = null;     // 'date' | 'numeric' (drives WHERE clause format)
+let _thFireDensityLayer = null;      // L.tileLayer — fire density kernel raster
+let _thFirePointsLayer  = null;      // L.esri.featureLayer — fire points
+let _thFireFreqLayer    = null;      // L.esri.featureLayer — fire frequency by páramo
 
 // ============================================================
 // BASEMAP SIMPLIFICATION
@@ -463,6 +497,30 @@ function _thHideVtLayer() {
 // OVERLAY MANAGEMENT — clear everything before switching modes
 // ============================================================
 
+function _thClearFireLayers() {
+  // Stop any running animation
+  if (_thFirePlayInterval) {
+    clearInterval(_thFirePlayInterval);
+    _thFirePlayInterval = null;
+  }
+  // Reset play button label if it exists in DOM
+  const playBtn = document.getElementById('th-fire-play-btn');
+  if (playBtn) playBtn.textContent = '▶ Play';
+
+  if (_thFireDensityLayer && _thMap) {
+    if (_thMap.hasLayer(_thFireDensityLayer)) _thMap.removeLayer(_thFireDensityLayer);
+    _thFireDensityLayer = null;
+  }
+  if (_thFirePointsLayer && _thMap) {
+    if (_thMap.hasLayer(_thFirePointsLayer)) _thMap.removeLayer(_thFirePointsLayer);
+    _thFirePointsLayer = null;
+  }
+  if (_thFireFreqLayer && _thMap) {
+    if (_thMap.hasLayer(_thFireFreqLayer)) _thMap.removeLayer(_thFireFreqLayer);
+    _thFireFreqLayer = null;
+  }
+}
+
 function _thClearOverlays() {
   // VectorTile GL layer
   _thHideVtLayer();
@@ -490,6 +548,9 @@ function _thClearOverlays() {
     if (_thMap.hasLayer(_thParamoRefLayer)) _thMap.removeLayer(_thParamoRefLayer);
     _thParamoRefLayer = null;
   }
+
+  // Fire layers
+  _thClearFireLayers();
 }
 
 // ============================================================
@@ -634,11 +695,59 @@ function _thShowLegend(mode) {
       break;
     }
 
-    case 'fire': {
+    case 'fire-density': {
       el.innerHTML = `
-        <div class="th-legend-title">🔥 Fire Pressure</div>
-        <div class="th-legend-note th-legend-note--pending">
-          Fire layers not yet published. Will show VIIRS/MODIS fire density and frequency around páramo zones.
+        <div class="th-legend-title">🔥 Fire Density Kernel</div>
+        <div class="th-legend-rows">
+          ${TH_FIRE_DENSITY_LEGEND.map(c =>
+            `<div class="th-legend-row">
+               <span class="th-swatch" style="background:${c.color}${c.border ? ';border:1px solid #ccc' : ''}"></span>
+               ${c.label}
+             </div>`
+          ).join('')}
+        </div>
+        <div class="th-legend-note">
+          VIIRS/MODIS fire density kernel · páramo buffer zone.
+          Raster shows relative fire event concentration.
+        </div>
+      `;
+      break;
+    }
+
+    case 'fire-points': {
+      el.innerHTML = `
+        <div class="th-legend-title">📍 Fire Points · ${_thFireYear}</div>
+        <div class="th-legend-rows">
+          <div class="th-legend-row">
+            <span class="th-swatch th-swatch--circle" style="background:#C2410C;border:2px solid #FFF3B0"></span>
+            Fire detection (VIIRS/MODIS)
+          </div>
+        </div>
+        <div class="th-legend-note">
+          Individual fire detections · ${_thFireYear}.
+          Use slider to animate 2012 – 2024.
+        </div>
+      `;
+      break;
+    }
+
+    case 'fire-frequency': {
+      el.innerHTML = `
+        <div class="th-legend-title">📊 Fire Frequency by Páramo</div>
+        <div class="th-legend-rows">
+          ${TH_FIRE_FREQ_BREAKS.map(c =>
+            `<div class="th-legend-row">
+               <span class="th-swatch" style="background:${c.color}${c.border ? ';border:1px solid #ccc' : ''}"></span>
+               ${c.label}
+             </div>`
+          ).join('')}
+          <div class="th-legend-row">
+            <span class="th-swatch" style="background:${TH_FIRE_FREQ_NODATA.color};border:1px solid #bbb"></span>
+            ${TH_FIRE_FREQ_NODATA.label}
+          </div>
+        </div>
+        <div class="th-legend-note">
+          Field: fire_density_km2 · fire events per km² · 5 classes.
         </div>
       `;
       break;
@@ -939,11 +1048,273 @@ function _thApplyTotalChange() {
   _thShowLegend('totalchange');
 }
 
-// F. Fire pressure — placeholder (no data yet)
+// ── Fire: date/year field auto-detection ─────────────────────────────────
+// Fetches the FeatureServer layer metadata and identifies which field
+// holds fire date/year information.  Sets _thFireDateField and
+// _thFireDateFieldType so WHERE clauses can be formed correctly.
+
+async function _thDetectFireDateField() {
+  if (_thFireDateField) return;   // already detected
+
+  const metaUrl = `${FIRE_POINTS_URL}/0?f=json`;
+  console.log('[threats.js] Detecting fire date field from:', metaUrl);
+
+  let fields = [];
+  try {
+    const resp = await fetch(metaUrl);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const json = await resp.json();
+    fields = json.fields || [];
+    console.log('[threats.js] Fire points fields:', fields.map(f => `${f.name} (${f.type})`));
+  } catch (e) {
+    console.error('[threats.js] Could not fetch fire points metadata:', e.message);
+    return;
+  }
+
+  // Candidates in priority order: exact date fields first, then numeric year
+  const dateCandidates  = ['ACQ_DATE', 'acq_date', 'DATE', 'date', 'timestamp', 'TIMESTAMP'];
+  const yearCandidates  = ['YEAR', 'year', 'FireYear', 'FIRE_YEAR'];
+
+  const fieldNames = fields.map(f => f.name);
+
+  for (const c of dateCandidates) {
+    if (fieldNames.includes(c)) {
+      _thFireDateField     = c;
+      _thFireDateFieldType = 'date';
+      console.log(`[threats.js] Fire date field detected: ${c} (type: date)`);
+      return;
+    }
+  }
+  for (const c of yearCandidates) {
+    if (fieldNames.includes(c)) {
+      _thFireDateField     = c;
+      _thFireDateFieldType = 'numeric';
+      console.log(`[threats.js] Fire date field detected: ${c} (type: numeric)`);
+      return;
+    }
+  }
+
+  console.warn('[threats.js] No date/year field found in fire points layer — will show all years');
+}
+
+// Build a WHERE clause string for the given year, based on detected field type.
+function _thFireWhereForYear(year) {
+  if (!_thFireDateField) return '1=1';
+  if (_thFireDateFieldType === 'date') {
+    return `${_thFireDateField} >= DATE '${year}-01-01' AND ${_thFireDateField} <= DATE '${year}-12-31'`;
+  }
+  // numeric year field
+  return `${_thFireDateField} = ${year}`;
+}
+
+// ── Fire sub-mode: density kernel (MapServer raster tiled layer) ─────────
+function _thShowFireDensity() {
+  console.time('[perf] load:threats:Fire density kernel');
+  console.log('[threats.js] Loading fire density kernel (MapServer tiled)');
+
+  // Use L.tileLayer with ArcGIS MapServer tile URL pattern
+  _thFireDensityLayer = L.tileLayer(
+    `${FIRE_DENSITY_KERNEL_URL}/tile/{z}/{y}/{x}`,
+    {
+      opacity:     0.72,
+      pane:        'threatsPane',
+      attribution: 'Fire density — VIIRS/MODIS via ArcGIS Online',
+      maxZoom:     18,
+    }
+  );
+
+  _thFireDensityLayer.addTo(_thMap);
+  _thFireDensityLayer.once('load', () => {
+    console.timeEnd('[perf] load:threats:Fire density kernel');
+    console.log('[threats.js] Fire density kernel loaded');
+  });
+  _thFireDensityLayer.on('tileerror', (e) =>
+    console.error('[threats.js] Fire density kernel tile error:', e)
+  );
+
+  _thShowLegend('fire-density');
+}
+
+// ── Fire sub-mode: points over time (FeatureServer, filtered by year) ────
+async function _thShowFirePoints() {
+  console.time('[perf] load:threats:Fire points');
+  console.log(`[threats.js] Loading fire points for year ${_thFireYear}`);
+
+  await _thDetectFireDateField();
+
+  const where = _thFireWhereForYear(_thFireYear);
+  console.log(`[threats.js] Fire points WHERE: ${where}`);
+
+  _thFirePointsLayer = L.esri.featureLayer({
+    url:   `${FIRE_POINTS_URL}/0`,
+    pane:  'threatsPane',
+    where,
+    pointToLayer(feature, latlng) {
+      return L.circleMarker(latlng, {
+        radius:      3.5,
+        fillColor:   '#C2410C',
+        color:       '#FFF3B0',
+        weight:      1,
+        fillOpacity: 0.85,
+        opacity:     1,
+      });
+    },
+    onEachFeature(feature, layer) {
+      const p = feature.properties || {};
+      // Try common date/year fields
+      const dateVal = p[_thFireDateField] || p.ACQ_DATE || p.acq_date || p.YEAR || p.year || '—';
+      const confidence = p.CONFIDENCE || p.confidence || p.FRP || '—';
+      const bright_ti4 = p.BRIGHT_TI4 || p.bright_ti4 || '—';
+
+      layer.bindPopup(`
+        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;
+                    padding:8px 11px;min-width:180px">
+          <h4 style="margin:0 0 5px;font-size:12px;color:#C2410C;
+                     border-bottom:1px solid #eee;padding-bottom:4px">🔥 Fire Detection</h4>
+          <table style="width:100%;font-size:11px;border-collapse:collapse">
+            <tr>
+              <td style="color:#888;padding:2px 0">Date / Year</td>
+              <td style="font-weight:700;text-align:right">${dateVal}</td>
+            </tr>
+            <tr>
+              <td style="color:#888;padding:2px 0">Confidence</td>
+              <td style="font-weight:700;text-align:right">${confidence}</td>
+            </tr>
+            <tr>
+              <td style="color:#888;padding:2px 0">Brightness</td>
+              <td style="font-weight:700;text-align:right">${bright_ti4}</td>
+            </tr>
+          </table>
+        </div>
+      `, { maxWidth: 240 });
+    },
+  });
+
+  _thFirePointsLayer.addTo(_thMap);
+  _thFirePointsLayer.once('load', () => {
+    console.timeEnd('[perf] load:threats:Fire points');
+    console.log(`[threats.js] Fire points loaded for year ${_thFireYear}`);
+  });
+  _thFirePointsLayer.on('requesterror', (e) =>
+    console.error('[threats.js] Fire points layer error:', e)
+  );
+
+  _thShowLegend('fire-points');
+}
+
+// ── Fire sub-mode: frequency by páramo (FeatureServer polygon) ───────────
+function _thShowFireFrequency() {
+  console.time('[perf] load:threats:Fire frequency by páramo');
+  console.log('[threats.js] Loading fire frequency by páramo');
+
+  function _fireFreqBreak(val) {
+    const v = Number(val);
+    if (val === null || val === undefined || isNaN(v)) return null;
+    for (const b of TH_FIRE_FREQ_BREAKS) {
+      if (v <= b.max) return b;
+    }
+    return TH_FIRE_FREQ_BREAKS[TH_FIRE_FREQ_BREAKS.length - 1];
+  }
+
+  _thFireFreqLayer = L.esri.featureLayer({
+    url:  `${FIRE_FREQUENCY_PARAMO_URL}/0`,
+    pane: 'threatsPane',
+    style(feature) {
+      const val = feature.properties?.fire_density_km2
+               ?? feature.properties?.FIRE_DENSITY_KM2
+               ?? null;
+      const brk = _fireFreqBreak(val);
+      if (!brk) {
+        return {
+          fillColor:   TH_FIRE_FREQ_NODATA.color,
+          fillOpacity: 0.45,
+          color:       'rgba(255,255,255,0.6)',
+          weight:      0.6,
+          opacity:     1,
+        };
+      }
+      return {
+        fillColor:   brk.color,
+        fillOpacity: 0.75,
+        color:       'rgba(255,255,255,0.6)',
+        weight:      0.6,
+        opacity:     1,
+      };
+    },
+    onEachFeature(feature, layer) {
+      const p    = feature.properties || {};
+      const name = p.pacomplejo || p.pacodigo || p.Nombre || p.nombre || p.name || 'Páramo';
+      const val  = p.fire_density_km2 ?? p.FIRE_DENSITY_KM2 ?? null;
+      const brk  = _fireFreqBreak(val);
+      const cat  = brk ? brk.label : TH_FIRE_FREQ_NODATA.label;
+      const valFmt = val != null
+        ? Number(val).toFixed(3) + ' fires/km²'
+        : '—';
+
+      layer.bindTooltip(
+        `<strong style="color:#E34A33;font-size:12px">${name}</strong>`,
+        { sticky: true, direction: 'top', opacity: 1 }
+      );
+      layer.bindPopup(`
+        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;
+                    padding:10px 13px;min-width:210px">
+          <h4 style="margin:0 0 6px;font-size:13px;color:#C8A840;
+                     border-bottom:1px solid #eee;padding-bottom:5px">${name}</h4>
+          <table style="width:100%;font-size:12px;border-collapse:collapse">
+            <tr>
+              <td style="color:#888;padding:2px 0">Fire frequency</td>
+              <td style="font-weight:700;text-align:right">${valFmt}</td>
+            </tr>
+            <tr>
+              <td style="color:#888;padding:2px 0">Category</td>
+              <td style="font-weight:700;text-align:right">${cat}</td>
+            </tr>
+          </table>
+        </div>
+      `, { maxWidth: 280 });
+
+      layer.on('click', function() {
+        console.log(`[threats.js] Fire-freq clicked: ${name} | fire_density_km2=${val} | category="${cat}"`);
+      });
+      layer.on('mouseover', function() {
+        if (window._mapMoving) return;
+        this.setStyle({ fillOpacity: 0.92, color: '#1F2937', weight: 2 });
+        this.bringToFront();
+      });
+      layer.on('mouseout', function() {
+        if (_thFireFreqLayer) _thFireFreqLayer.resetStyle(this);
+      });
+    },
+  });
+
+  _thFireFreqLayer.addTo(_thMap);
+  _thFireFreqLayer.once('load', () => {
+    console.timeEnd('[perf] load:threats:Fire frequency by páramo');
+    console.log('[threats.js] Fire frequency by páramo loaded');
+    // Log sample properties to confirm field name
+    let n = 0;
+    _thFireFreqLayer.eachFeature(lyr => {
+      if (n++ < 2) console.log('[threats.js] Fire-freq sample props:', lyr.feature?.properties);
+    });
+  });
+  _thFireFreqLayer.on('requesterror', (e) =>
+    console.error('[threats.js] Fire frequency layer error:', e)
+  );
+
+  _thShowLegend('fire-frequency');
+}
+
+// F. Fire pressure — sub-mode dispatcher
 function _thApplyFire() {
-  _thClearOverlays();
-  // No layers — legend communicates coming-soon status
-  _thShowLegend('fire');
+  _thClearFireLayers();
+  _thRestoreBasemap();
+
+  switch (_thFireMode) {
+    case 'density':   _thShowFireDensity();   break;
+    case 'points':    _thShowFirePoints();     break;
+    case 'frequency': _thShowFireFrequency();  break;
+    default:          _thShowFireDensity();    break;
+  }
 }
 
 // ============================================================
@@ -1001,6 +1372,21 @@ function _updateThreatsUI() {
     const el = document.getElementById(`th-ctx-${m}`);
     if (el) el.style.display = (m === _thMode) ? '' : 'none';
   });
+
+  // Fire sub-mode buttons
+  document.querySelectorAll('.th-fire-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.fireMode === _thFireMode);
+  });
+
+  // Fire year section: only visible when sub-mode is 'points'
+  const fireYearSec = document.getElementById('th-fire-year-section');
+  if (fireYearSec) fireYearSec.style.display = (_thMode === 'fire' && _thFireMode === 'points') ? '' : 'none';
+
+  // Fire year label + slider sync
+  const fireYearLabel  = document.getElementById('th-fire-year-label');
+  const fireYearSlider = document.getElementById('th-fire-year-slider');
+  if (fireYearLabel)  fireYearLabel.textContent = _thFireYear;
+  if (fireYearSlider) fireYearSlider.value       = _thFireYear;
 }
 
 // ============================================================
@@ -1075,6 +1461,59 @@ function wireThreatsPanel() {
     });
   });
 
+  // ── Fire sub-mode buttons ──
+  document.querySelectorAll('.th-fire-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      _thFireMode = btn.dataset.fireMode;
+      _updateThreatsUI();
+      if (_thMode === 'fire') _thApplyFire();
+    });
+  });
+
+  // ── Fire year slider ──
+  const fireSlider = document.getElementById('th-fire-year-slider');
+  if (fireSlider) {
+    fireSlider.addEventListener('input', () => {
+      _thFireYear = parseInt(fireSlider.value, 10);
+      _updateThreatsUI();
+      if (_thMode === 'fire' && _thFireMode === 'points') {
+        // Update WHERE clause on existing layer without rebuilding
+        if (_thFirePointsLayer) {
+          const where = _thFireWhereForYear(_thFireYear);
+          console.log(`[threats.js] Fire points year changed to ${_thFireYear} — WHERE: ${where}`);
+          _thFirePointsLayer.setWhere(where);
+          _thShowLegend('fire-points');
+        }
+      }
+    });
+  }
+
+  // ── Fire play/pause button ──
+  const playBtn = document.getElementById('th-fire-play-btn');
+  if (playBtn) {
+    playBtn.addEventListener('click', () => {
+      if (_thFirePlayInterval) {
+        // Pause
+        clearInterval(_thFirePlayInterval);
+        _thFirePlayInterval = null;
+        playBtn.textContent = '▶ Play';
+      } else {
+        // Play: step through 2012–2024, one year per 1.5s
+        playBtn.textContent = '⏸ Pause';
+        _thFirePlayInterval = setInterval(() => {
+          _thFireYear = (_thFireYear >= 2024) ? 2012 : _thFireYear + 1;
+          _updateThreatsUI();
+          if (_thFirePointsLayer) {
+            const where = _thFireWhereForYear(_thFireYear);
+            console.log(`[threats.js] Fire play: year=${_thFireYear} WHERE=${where}`);
+            _thFirePointsLayer.setWhere(where);
+            _thShowLegend('fire-points');
+          }
+        }, 1500);
+      }
+    });
+  }
+
   // Restore UI state from previous visit, then apply current mode
   _updateThreatsUI();
   _thApplyMode();
@@ -1085,9 +1524,9 @@ function wireThreatsPanel() {
 // ============================================================
 
 function cleanupThreatsPanel() {
-  _thClearOverlays();   // hides GL canvas, removes featureLayers
+  _thClearOverlays();     // hides GL canvas, removes featureLayers, clears fire layers
   _thHideLegend();
-  _thRestoreBasemap();  // restore hillshade if it was hidden
+  _thRestoreBasemap();    // restore hillshade if it was hidden
 }
 
 // ============================================================

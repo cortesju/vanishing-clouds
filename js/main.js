@@ -258,10 +258,20 @@ const PANEL_TEMPLATES = {
       </div>
 
       <div id="th-ctx-fire" class="th-mode-context" style="display:none">
-        <div class="th-coming-soon">
-          <div class="th-coming-soon-icon">🔥</div>
-          <strong>Fire Pressure — Coming Soon</strong>
-          <p>Fire alerts from VIIRS/MODIS will be used to estimate fire density and fire frequency around páramo ecosystems, identifying areas repeatedly exposed to burning or recent fire activity.</p>
+        <p>Three views of fire pressure on páramo ecosystems derived from VIIRS/MODIS satellite data.</p>
+        <div class="th-section-label">Fire layer</div>
+        <div class="th-fire-mode-group">
+          <button class="th-fire-btn active" data-fire-mode="density">🔥 Fire density</button>
+          <button class="th-fire-btn" data-fire-mode="points">📍 Points over time</button>
+          <button class="th-fire-btn" data-fire-mode="frequency">📊 Frequency by páramo</button>
+        </div>
+        <div id="th-fire-year-section" style="display:none">
+          <div class="th-section-label">Year: <span id="th-fire-year-label">2024</span></div>
+          <div class="th-fire-slider-row">
+            <input type="range" id="th-fire-year-slider" min="2012" max="2024" value="2024" step="1">
+            <button id="th-fire-play-btn" class="th-play-btn">▶ Play</button>
+          </div>
+          <div class="th-fire-year-range">2012 — 2024</div>
         </div>
       </div>
 
