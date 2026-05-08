@@ -424,7 +424,11 @@ function _hoistPopupPane() {
     if (popupPane)   popupPane.style.transform = t;
     if (tooltipPane) tooltipPane.style.transform = t;
   }
-  map.on('move', _syncPopupTransform);
+  // Sync on every move frame (drag + zoom animation) so popups track anchor.
+  // Also sync on popupopen: Leaflet calls _updatePosition() which sets the
+  // popup container's translate(), but the pane transform must be current too.
+  // And on zoomend to catch any final repositioning after animation completes.
+  map.on('move zoom zoomend popupopen', _syncPopupTransform);
   _syncPopupTransform();   // apply current transform right away
   console.log('[maps.js] Popup/tooltip panes hoisted above GL canvases (#map-popup-overlay z=9000)');
 }

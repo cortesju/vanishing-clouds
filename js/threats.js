@@ -1237,18 +1237,27 @@ async function _thShowFirePoints() {
     console.warn(`[threats.js] Fire points: no features returned for year ${_thFireYear} — WHERE="${where}"`);
   }
 
+  // Fire point icon — small cross + centre dot, matching ArcGIS Pro VIIRS fire symbology.
+  // Cross arms in pale yellow give visibility on both dark and light backgrounds;
+  // orange-red fill dot marks the detection centroid.
+  const _fireIcon = L.divIcon({
+    className:  'fire-pt-icon',   // see main.css — removes default white box/border
+    html: '<svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="-4.5 -4.5 9 9">'
+        + '<line x1="-4" y1="0" x2="4" y2="0" stroke="#FFF3B0" stroke-width="1.1" stroke-linecap="round"/>'
+        + '<line x1="0" y1="-4" x2="0" y2="4" stroke="#FFF3B0" stroke-width="1.1" stroke-linecap="round"/>'
+        + '<circle cx="0" cy="0" r="1.8" fill="#C2410C"/>'
+        + '</svg>',
+    iconSize:   [9, 9],
+    iconAnchor: [4, 4],
+  });
+
   // Render as L.geoJSON — no server symbology, pure client-side rendering
   _thFirePointsLayer = L.geoJSON(geojson, {
     pane: 'threatsPane',
     pointToLayer(feature, latlng) {
-      return L.circleMarker(latlng, {
-        radius:      3.5,
-        fillColor:   '#C2410C',   // orange-red — VIIRS/MODIS fire
-        color:       '#FFF3B0',   // pale yellow outline
-        weight:      0.5,
-        fillOpacity: 0.85,
-        opacity:     1,
-      });
+      // L.marker with pane option places the icon in threatsPane (z=460),
+      // above the páramo fill but below the hoisted popup overlay (z=9000).
+      return L.marker(latlng, { icon: _fireIcon, pane: 'threatsPane' });
     },
     onEachFeature(feature, layer) {
       const p = feature.properties || {};

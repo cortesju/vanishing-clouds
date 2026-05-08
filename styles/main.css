@@ -1830,6 +1830,31 @@ body.terrain-active #side-panel {
   overflow: visible;   /* popups that extend outside the map area must still show */
 }
 
+/* Panes inside the overlay are absolute-positioned from the overlay's top-left,
+   same coordinate space as they had inside .leaflet-map-pane. */
+#map-popup-overlay .leaflet-pane {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* Re-enable pointer events on the actual popup and tooltip elements so they
+   remain interactive even though the parent overlay has pointer-events:none. */
+#map-popup-overlay .leaflet-popup,
+#map-popup-overlay .leaflet-popup-content-wrapper,
+#map-popup-overlay .leaflet-popup-tip-container,
+#map-popup-overlay .leaflet-popup-close-button,
+#map-popup-overlay .leaflet-tooltip {
+  pointer-events: auto;
+}
+
+/* Fire point DivIcon — raw SVG cross, no white box or border */
+.fire-pt-icon {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
 .leaflet-popup-content-wrapper {
   border-radius: var(--radius) !important;
   box-shadow: var(--shadow-md) !important;
