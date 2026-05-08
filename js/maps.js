@@ -443,6 +443,7 @@ function initHillshadeOverlay() {
 
   const container = document.createElement('div');
   container.id = 'hillshade-gl';
+  container.style.display = 'none';   // OFF by default — user enables via Map Layers panel
   document.getElementById('map-main').appendChild(container);
 
   const center = map.getCenter();
@@ -1560,30 +1561,81 @@ window.setBasemapOpacity = function(key, opacity) {
 };
 
 // ============================================================
+// OPTION A — TRUE TAB ISOLATION
+// Each destroy function removes all layers owned by a tab from the
+// map, nulls the LG references, and resets _panelLayersBuilt so
+// _ensurePanelLayers() rebuilds from the DATA cache on next visit.
+// paramoFill / paramoOutline are kept alive (shared across tabs).
+// ============================================================
+
+function _destroySpeciesLayers() {
+  // Stop any running playback timers
+  if (_gbifPlayInterval) { clearInterval(_gbifPlayInterval); _gbifPlayInterval = null; }
+  if (_hexPlayInterval)  { clearInterval(_hexPlayInterval);  _hexPlayInterval  = null; }
+
+  if (LG.speciesHexLayer) {
+    if (map.hasLayer(LG.speciesHexLayer)) map.removeLayer(LG.speciesHexLayer);
+    LG.speciesHexLayer = null;
+  }
+  if (LG.gbifPointsLayer) {
+    if (map.hasLayer(LG.gbifPointsLayer)) map.removeLayer(LG.gbifPointsLayer);
+    LG.gbifPointsLayer = null;
+  }
+  if (gbifHeatLayer) {
+    if (map.hasLayer(gbifHeatLayer)) map.removeLayer(gbifHeatLayer);
+    gbifHeatLayer = null;
+  }
+  _panelLayersBuilt.species = false;
+  console.log('[isolation] species layers destroyed');
+}
+
+function _destroyUrgencyLayers() {
+  if (LG.urgencyHexagons) {
+    if (map.hasLayer(LG.urgencyHexagons)) map.removeLayer(LG.urgencyHexagons);
+    LG.urgencyHexagons = null;
+  }
+  _panelLayersBuilt.urgency = false;
+  console.log('[isolation] urgency layers destroyed');
+}
+
+function _destroyBuildLayers() {
+  ['agriculture', 'fire', 'urban', 'mining'].forEach(key => {
+    if (LG[key]) {
+      if (map.hasLayer(LG[key])) map.removeLayer(LG[key]);
+      LG[key] = null;
+    }
+  });
+  // Also let build-paramo.js clean up its own overlays
+  if (typeof window.cleanupBuildPanel === 'function') window.cleanupBuildPanel();
+  _panelLayersBuilt.build = false;
+  console.log('[isolation] build layers destroyed');
+}
+
+// ============================================================
 // PANEL CHANGE HANDLER (called from main.js)
 // ============================================================
 
 window.onPanelChange = function(panelId) {
-  // Strip GBIF points immediately when leaving the species panel
-  if (_mapActivePanel === 'species' && panelId !== 'species') {
-    if (LG.gbifPointsLayer && map.hasLayer(LG.gbifPointsLayer)) map.removeLayer(LG.gbifPointsLayer);
-    if (gbifHeatLayer && map.hasLayer(gbifHeatLayer)) map.removeLayer(gbifHeatLayer);
-  }
-  // Remove threats-panel overlays when leaving (state preserved for next visit)
-  if (_mapActivePanel === 'threats' && panelId !== 'threats') {
-    if (typeof window.cleanupThreatsPanel === 'function') window.cleanupThreatsPanel();
-  }
-  // Remove build-panel overlays when leaving (layer state preserved for next visit)
-  if (_mapActivePanel === 'build' && panelId !== 'build') {
-    if (typeof window.cleanupBuildPanel === 'function') window.cleanupBuildPanel();
-    // Restore Colombia close-up when leaving Build a Páramo
-    if (map) map.flyTo(COLOMBIA_CENTER, DEFAULT_ZOOM, { duration: 1.2, easeLinearity: 0.5 });
-    // Move zoom control back to bottom-right and remove build-mode class
-    if (_zoomControl && map) {
-      _zoomControl.remove();
-      _zoomControl = L.control.zoom({ position: 'bottomright' }).addTo(map);
+  // ── OPTION A: destroy ALL layers for the tab being left ────────────────────
+  if (_mapActivePanel !== panelId) {
+    switch (_mapActivePanel) {
+      case 'species': _destroySpeciesLayers(); break;
+      case 'urgency': _destroyUrgencyLayers(); break;
+      case 'build':
+        _destroyBuildLayers();
+        // Restore Colombia close-up when leaving Build a Páramo
+        if (map) map.flyTo(COLOMBIA_CENTER, DEFAULT_ZOOM, { duration: 1.2, easeLinearity: 0.5 });
+        // Move zoom control back to bottom-right and remove build-mode class
+        if (_zoomControl && map) {
+          _zoomControl.remove();
+          _zoomControl = L.control.zoom({ position: 'bottomright' }).addTo(map);
+        }
+        document.getElementById('map-main')?.classList.remove('map-build-mode');
+        break;
+      case 'threats':
+        if (typeof window.cleanupThreatsPanel === 'function') window.cleanupThreatsPanel();
+        break;
     }
-    document.getElementById('map-main')?.classList.remove('map-build-mode');
   }
   _mapActivePanel = panelId;
 
