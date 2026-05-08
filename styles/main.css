@@ -2965,6 +2965,26 @@ body.terrain-active #side-panel {
     0 0 10px rgba(0, 0, 0, 0.30);
 }
 
+/* ── Threats VectorTileServer GL canvas ──
+   Dedicated MapLibre GL overlay for ArcGIS VectorTileServer threat layers.
+   Z=360: above terrain (200) and hillshade (202), below Leaflet overlay
+   pane (400) and the site's label/road vector tiles (450).
+   Opacity + display are toggled by threats.js on every layer switch. */
+#threats-vt-gl {
+  position: absolute;
+  inset: 0;
+  z-index: 360;
+  pointer-events: none;
+  display: none;         /* hidden by default; shown by _thLoadVtLayer */
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+#threats-vt-gl .maplibregl-canvas-container,
+#threats-vt-gl canvas {
+  pointer-events: none !important;
+}
+
 /* ============================================================
    26. THREATS PANEL
    Land-cover change timeline and threat category explorer

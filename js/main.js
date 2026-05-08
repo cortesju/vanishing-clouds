@@ -208,6 +208,7 @@ const PANEL_TEMPLATES = {
         <button class="th-mode-btn active" data-mode="landcover">🗂 Land-cover timeline</button>
         <button class="th-mode-btn" data-mode="threat">⚠ Threat category by year</button>
         <button class="th-mode-btn" data-mode="agexpansion">🌾 Agriculture expansion by páramo</button>
+        <button class="th-mode-btn" data-mode="urbanrisk">🏙 Urban proximity risk</button>
         <button class="th-mode-btn" data-mode="totalchange">📊 Total land-cover change</button>
         <button class="th-mode-btn" data-mode="fire">🔥 Fire pressure</button>
       </div>
@@ -246,6 +247,10 @@ const PANEL_TEMPLATES = {
 
       <div id="th-ctx-agexpansion" class="th-mode-context" style="display:none">
         <p>Each páramo complex is colored by how much agriculture increased inside or around its boundary over the full study period. Click any polygon to see its expansion category and change value.</p>
+      </div>
+
+      <div id="th-ctx-urbanrisk" class="th-mode-context" style="display:none">
+        <p>Each páramo complex is rated by its proximity to urban areas. Higher risk indicates páramos that are closer to existing or expanding urban footprints and therefore face greater human pressure. Click any polygon to see its risk category and distance to nearest urban area.</p>
       </div>
 
       <div id="th-ctx-totalchange" class="th-mode-context" style="display:none">
