@@ -544,6 +544,9 @@ function switchPanel(panelId) {
 
   // Keep Map Layers dropdown in sync with the active panel
   syncLayersDropdownToPanel(panelId);
+
+  // Keep mobile peek bar title + nav buttons in sync
+  if (isMobile()) _updateMobPeekBar();
 }
 
 // Called after panel HTML is injected — re-initializes sub-components
@@ -591,14 +594,34 @@ function afterPanelRender(panelId) {
 // PANEL COLLAPSE / EXPAND
 // ============================================================
 
+function isMobile() {
+  return window.matchMedia('(max-width: 768px)').matches;
+}
+
 function setPanelCollapsed(collapsed) {
   panelCollapsed = collapsed;
   const panel = document.getElementById('side-panel');
   if (!panel) return;
-  panel.classList.toggle('collapsed', collapsed);
-  // Update map padding so zoom controls don't overlap panel
-  if (typeof window.updateMapPadding === 'function') {
-    window.updateMapPadding(collapsed ? 0 : parseInt(getComputedStyle(document.documentElement).getPropertyValue('--panel-w')));
+
+  if (isMobile()) {
+    // Mobile: toggle .expanded (open sheet) vs default peek state
+    panel.classList.toggle('expanded', !collapsed);
+    _updateMobPeekBar();
+  } else {
+    // Desktop: slide panel left/right
+    panel.classList.toggle('collapsed', collapsed);
+    if (typeof window.updateMapPadding === 'function') {
+      window.updateMapPadding(
+        collapsed ? 0 : parseInt(getComputedStyle(document.documentElement).getPropertyValue('--panel-w'))
+      );
+    }
+  }
+
+  // Invalidate map size after the CSS transition finishes (350 ms)
+  if (window.map) {
+    setTimeout(() => {
+      try { window.map.invalidateSize({ animate: false }); } catch (e) { /* ignore */ }
+    }, 380);
   }
 }
 
@@ -824,32 +847,153 @@ function initNavToggles() {
     });
   });
 
-  // Mobile hamburger (shows nav items)
+  // Mobile hamburger — opens #mob-nav-drawer (injected by initMobile)
   const mobileHamburger = document.getElementById('tn-hamburger');
-  const tnCenter        = document.getElementById('tn-center');
-  if (mobileHamburger && tnCenter) {
+  if (mobileHamburger) {
     mobileHamburger.addEventListener('click', e => {
       e.stopPropagation();
-      const open = tnCenter.style.display === 'flex';
-      tnCenter.style.display = open ? '' : 'flex';
-      tnCenter.style.flexDirection = 'column';
-      tnCenter.style.position = 'fixed';
-      tnCenter.style.top = 'var(--nav-h)';
-      tnCenter.style.left = '0';
-      tnCenter.style.right = '0';
-      tnCenter.style.background = 'white';
-      tnCenter.style.padding = '0.5rem';
-      tnCenter.style.boxShadow = '0 4px 20px rgba(0,0,0,0.12)';
-      tnCenter.style.zIndex = '700';
-      mobileHamburger.textContent = open ? '☰' : '✕';
+      const drawer = document.getElementById('mob-nav-drawer');
+      if (!drawer) return;
+      const nowOpen = !drawer.classList.contains('open');
+      drawer.classList.toggle('open', nowOpen);
+      mobileHamburger.textContent = nowOpen ? '✕' : '☰';
     });
-    // Close on nav item click
-    tnCenter.addEventListener('click', e => {
-      if (e.target.classList.contains('tn-item')) {
-        tnCenter.style.display = '';
+    // Close drawer when user taps outside it
+    document.addEventListener('click', e => {
+      const drawer = document.getElementById('mob-nav-drawer');
+      if (drawer && drawer.classList.contains('open') &&
+          !drawer.contains(e.target) && e.target !== mobileHamburger) {
+        drawer.classList.remove('open');
         mobileHamburger.textContent = '☰';
       }
     });
+  }
+}
+
+// ============================================================
+// MOBILE — helpers, peek bar, nav drawer, swipe gestures
+// ============================================================
+
+// Human-readable tab labels for the peek bar and nav drawer
+const PANEL_LABELS = {
+  overview: 'Páramos',
+  build:    'Build a Páramo',
+  species:  'Species',
+  threats:  'Threats',
+  urgency:  'Urgency',
+  about:    'About',
+};
+
+// SVG path inner content, matched to the desktop tn-item icons
+const PANEL_ICONS_SVG = {
+  overview: '<path d="M8 1L1 14h14L8 1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>',
+  build:    '<path d="M1 13L5.5 5.5l3 4 2.5-3.5L15 13H1z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M1 15h14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>',
+  species:  '<circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><path d="M8 4v4l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
+  threats:  '<path d="M8 2L1.5 13.5h13L8 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 6.5v3M8 11v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
+  urgency:  '<circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="11" r=".75" fill="currentColor"/>',
+  about:    '<path d="M2 4h12M2 8h8M2 12h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
+};
+
+/**
+ * Update peek bar title and active state on mobile nav buttons.
+ * Called whenever the active panel changes.
+ */
+function _updateMobPeekBar() {
+  const title = document.getElementById('mob-peek-title');
+  if (title) title.textContent = PANEL_LABELS[activePanel] || activePanel;
+
+  document.querySelectorAll('.mob-nav-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.panel === activePanel);
+  });
+}
+
+/**
+ * One-time mobile initialisation:
+ *  1. Injects #mob-peek-bar at top of #side-panel
+ *  2. Injects #mob-nav-drawer below the top nav
+ *  3. Wires swipe-up / swipe-down gestures on the sheet
+ *  4. Starts panel in peek (collapsed) state
+ *  5. Hides terrain profile on phones (< 600 px)
+ */
+function initMobile() {
+  if (!isMobile()) return;
+
+  const panel  = document.getElementById('side-panel');
+  const scroll = document.getElementById('panel-scroll');
+  const nav    = document.getElementById('top-nav');
+  if (!panel || !scroll || !nav) return;
+
+  // ── 1. Peek bar ──────────────────────────────────────────────
+  const peekBar = document.createElement('div');
+  peekBar.id = 'mob-peek-bar';
+  peekBar.innerHTML = `
+    <div id="mob-peek-pill"></div>
+    <span id="mob-peek-title">${PANEL_LABELS[activePanel] || 'Páramos'}</span>
+    <span id="mob-peek-hint">tap to expand</span>
+  `;
+  panel.insertBefore(peekBar, scroll);
+
+  peekBar.addEventListener('click', () => {
+    // Toggle: peek → expanded, expanded → peek
+    setPanelCollapsed(panel.classList.contains('expanded'));
+  });
+
+  // ── 2. Mobile nav drawer ─────────────────────────────────────
+  const panels = ['overview', 'build', 'species', 'threats', 'urgency', 'about'];
+  const drawer = document.createElement('div');
+  drawer.id = 'mob-nav-drawer';
+  drawer.innerHTML = `
+    <div class="mob-nav-grid">
+      ${panels.map(pid => `
+        <button class="mob-nav-btn${pid === activePanel ? ' active' : ''}" data-panel="${pid}">
+          <svg width="18" height="16" viewBox="0 0 16 16" fill="none">
+            ${PANEL_ICONS_SVG[pid] || ''}
+          </svg>
+          ${PANEL_LABELS[pid]}
+        </button>
+      `).join('')}
+    </div>`;
+  nav.insertAdjacentElement('afterend', drawer);
+
+  // Wire each nav button
+  drawer.querySelectorAll('.mob-nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      switchPanel(btn.dataset.panel);
+      drawer.classList.remove('open');
+      const ham = document.getElementById('tn-hamburger');
+      if (ham) ham.textContent = '☰';
+      // Expand sheet so user sees the content
+      setTimeout(() => setPanelCollapsed(false), 60);
+    });
+  });
+
+  // ── 3. Swipe gestures on panel ───────────────────────────────
+  let _swipeStartY = 0;
+  let _swipeStartT = 0;
+
+  panel.addEventListener('touchstart', e => {
+    _swipeStartY = e.touches[0].clientY;
+    _swipeStartT = Date.now();
+  }, { passive: true });
+
+  panel.addEventListener('touchend', e => {
+    if (Date.now() - _swipeStartT > 600) return;   // ignore long presses
+    const dy = _swipeStartY - e.changedTouches[0].clientY;
+    if (Math.abs(dy) < 28) return;                  // minimum swipe distance
+    if (dy > 0 && !panel.classList.contains('expanded')) {
+      setPanelCollapsed(false);   // swipe up → expand
+    } else if (dy < 0 && panel.classList.contains('expanded')) {
+      setPanelCollapsed(true);    // swipe down → peek
+    }
+  }, { passive: true });
+
+  // ── 4. Start in peek state ───────────────────────────────────
+  panel.classList.remove('expanded', 'collapsed');
+  panelCollapsed = true;
+
+  // ── 5. Auto-collapse terrain profile on phones ───────────────
+  if (window.innerWidth <= 600 && window.TP) {
+    window.TP.hide();
   }
 }
 
@@ -867,6 +1011,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initNavToggles();
   initLayersDropdown();
+  initMobile();   // mobile bottom-sheet + nav drawer + swipe gestures
 
   // Expose switchPanel globally so other JS can navigate panels
   window.switchPanel = switchPanel;

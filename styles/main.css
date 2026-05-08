@@ -2003,79 +2003,351 @@ body.terrain-active .leaflet-control-scale {
 }
 
 /* ============================================================
-   20. RESPONSIVE — MOBILE (max-width: 768px)
+   20. RESPONSIVE — TABLET  (max-width: 900px)
    ============================================================ */
-@media (max-width: 768px) {
-  :root {
-    --panel-w: 100vw;
-    --nav-h: 52px;
+@media (max-width: 900px) {
+  :root { --panel-w: 340px; }
+
+  .tn-item {
+    padding: 0.38rem 0.55rem;
+    font-size: 0.76rem;
   }
 
+  .tn-layers-btn {
+    padding: 0.38rem 0.75rem;
+    font-size: 0.76rem;
+  }
+
+  /* Threats mode buttons wrap at tablet */
+  .th-mode-group {
+    flex-wrap: wrap;
+  }
+  .th-mode-btn {
+    flex: 1 1 calc(50% - 0.25rem);
+    min-width: 0;
+  }
+}
+
+/* ============================================================
+   21. RESPONSIVE — MOBILE  (max-width: 768px)
+   ============================================================ */
+@media (max-width: 768px) {
+  /* ── Root overrides ─────────────────────────────────────── */
+  :root {
+    --panel-w:      100vw;
+    --nav-h:        52px;
+    --mob-peek-h:   68px;   /* height of bottom-sheet peek strip */
+    --mob-sheet-h:  62vh;   /* height of fully-expanded bottom sheet */
+  }
+
+  /* ── Top navigation ──────────────────────────────────────── */
+  /* Hide desktop tab bar */
   .tn-center { display: none; }
 
+  /* Show hamburger */
   .tn-hamburger {
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    line-height: 1;
+    background: rgba(255,255,255,0.65);
+    backdrop-filter: var(--fog-blur);
+    -webkit-backdrop-filter: var(--fog-blur);
+    border: 1px solid rgba(255,255,255,0.5);
+    flex-shrink: 0;
   }
 
-  .tn-layers-btn { display: none; }
+  /* Map Layers: keep visible but shrink to icon-only pill */
+  .tn-layers-btn {
+    display: flex;
+    padding: 0.38rem 0.55rem;
+    gap: 0;
+  }
+  .tn-layers-btn .layers-btn-label { display: none; }
+  .tn-layers-btn .chevron { display: none; }
 
-  /* On mobile, panel is full width and slides up from bottom */
+  /* ── Mobile nav drawer ────────────────────────────────────── */
+  #mob-nav-drawer {
+    position: fixed;
+    top: var(--nav-h);
+    left: 0;
+    right: 0;
+    background: rgba(255,255,255,0.97);
+    backdrop-filter: var(--fog-blur);
+    -webkit-backdrop-filter: var(--fog-blur);
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.14);
+    z-index: 800;
+    padding: 0.6rem 0.75rem 0.9rem;
+    transform: translateY(-110%);
+    transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+    /* visibility toggled by .open class */
+  }
+  #mob-nav-drawer.open {
+    transform: translateY(0);
+  }
+
+  .mob-nav-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.45rem;
+  }
+
+  .mob-nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.7rem 0.4rem 0.6rem;
+    border-radius: 10px;
+    background: var(--primary-pale);
+    border: 1.5px solid transparent;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--text-medium);
+    cursor: pointer;
+    transition: background 0.18s, border-color 0.18s, color 0.18s;
+    line-height: 1.2;
+    text-align: center;
+  }
+  .mob-nav-btn svg { flex-shrink: 0; }
+  .mob-nav-btn.active {
+    background: rgba(27,94,59,0.13);
+    border-color: var(--primary);
+    color: var(--primary);
+    font-weight: 700;
+  }
+  .mob-nav-btn:active { transform: scale(0.96); }
+
+  /* ── Layers dropdown: full-width on mobile ───────────────── */
+  #layers-dropdown {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: var(--nav-h);
+    max-height: 70vh;
+    overflow-y: auto;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  }
+
+  /* ── Bottom sheet panel ──────────────────────────────────── */
   #side-panel {
+    position: fixed;
     top: auto;
-    bottom: 32px;
+    bottom: var(--data-strip-h);
     left: 0;
     right: 0;
     width: 100%;
-    height: 55vh;
+    height: var(--mob-sheet-h);
+    max-height: calc(100vh - var(--nav-h) - var(--data-strip-h) - 8px);
+    /* Default: peek state — only mob-peek-h of panel is visible */
+    transform: translateY(calc(100% - var(--mob-peek-h)));
+    border-radius: 22px 22px 0 0;
+    box-shadow: 0 -6px 32px rgba(0,0,0,0.18);
+    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Expanded: slide fully into view */
+  #side-panel.expanded {
     transform: translateY(0);
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
   }
 
+  /* .collapsed on mobile also means peek (not hidden off left edge) */
   #side-panel.collapsed {
-    transform: translateY(calc(100% - 48px));
+    transform: translateY(calc(100% - var(--mob-peek-h)));
   }
 
-  /* Collapse tab at top on mobile */
-  #panel-collapse-tab {
-    left: 50%;
-    top: 0;
-    transform: translateX(-50%);
-    width: 56px;
-    height: 20px;
-    border-radius: 0 0 8px 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  /* ── Peek bar (injected by initMobile JS) ────────────────── */
+  #mob-peek-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 16px 0;
+    flex-shrink: 0;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    min-height: var(--mob-peek-h);
+    justify-content: flex-start;
   }
 
-  .collapse-arrow {
-    transform: rotate(-90deg);
+  #mob-peek-pill {
+    width: 38px;
+    height: 4px;
+    border-radius: 99px;
+    background: rgba(0,0,0,0.2);
+    margin-bottom: 9px;
+    flex-shrink: 0;
   }
 
-  #side-panel.collapsed .collapse-arrow {
-    transform: rotate(90deg);
+  #mob-peek-title {
+    font-size: 0.80rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    letter-spacing: 0.01em;
   }
 
-  .species-grid {
-    grid-template-columns: 1fr 1fr;
+  #mob-peek-hint {
+    font-size: 0.66rem;
+    color: var(--text-light);
+    margin-top: 3px;
   }
 
-  .modal-stats-grid {
-    grid-template-columns: 1fr 1fr;
+  /* Desktop collapse tab hidden on mobile (peek bar replaces it) */
+  #panel-collapse-tab { display: none; }
+
+  /* Panel scroll: remaining height, touch-friendly */
+  #panel-scroll {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .panel-stats {
-    grid-template-columns: 1fr 1fr;
-  }
-
+  /* ── Data strip ──────────────────────────────────────────── */
   #data-strip {
-    font-size: 0.65rem;
-    gap: 0.4rem;
+    font-size: 0.62rem;
+    gap: 0.35rem;
     padding: 0 0.6rem;
   }
-
   .data-strip-credits { display: none; }
+
+  /* ── Popups ──────────────────────────────────────────────── */
+  .leaflet-popup-content-wrapper {
+    max-width: 280px !important;
+  }
+  .leaflet-popup-content {
+    max-width: 260px !important;
+    margin: 8px 10px !important;
+    font-size: 13px !important;
+  }
+
+  /* ── Scale bar + north arrow above sheet peek ────────────── */
+  .leaflet-control-scale {
+    margin-bottom: calc(var(--mob-peek-h) + var(--data-strip-h) + 8px) !important;
+  }
+  /* terrain-active override also applies — sheet peek is always higher */
+  body.terrain-active .leaflet-control-scale {
+    margin-bottom: calc(var(--mob-peek-h) + var(--data-strip-h) + 8px) !important;
+  }
+
+  /* ── Threats controls ────────────────────────────────────── */
+  .th-mode-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.35rem;
+  }
+  .th-mode-btn {
+    font-size: 0.73rem;
+    padding: 0.45rem 0.5rem;
+    text-align: left;
+  }
+  .th-year-group {
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+  .th-year-btn { flex: 1 1 auto; }
+
+  .th-cat-group { flex-wrap: wrap; }
+  .th-cat-btn {
+    flex: 1 1 calc(50% - 0.25rem);
+    justify-content: center;
+  }
+
+  /* ── Build panel ─────────────────────────────────────────── */
+  .bp-layer-card-header { flex-wrap: wrap; gap: 0.4rem; }
+
+  /* ── Grids ───────────────────────────────────────────────── */
+  .species-grid        { grid-template-columns: 1fr 1fr; }
+  .modal-stats-grid    { grid-template-columns: 1fr 1fr; }
+  .panel-stats         { grid-template-columns: 1fr 1fr; }
+
+  /* ── Panel padding ───────────────────────────────────────── */
+  .panel-section { padding: 1.25rem 1.25rem 2rem; }
+
+  /* ── Terrain profile on mobile ───────────────────────────── */
+  #terrain-profile-panel {
+    height: 110px;   /* shorter than desktop 142px */
+  }
+}
+
+/* ============================================================
+   22. RESPONSIVE — PHONE  (max-width: 600px)
+   ============================================================ */
+@media (max-width: 600px) {
+  :root {
+    --mob-peek-h:  64px;
+    --mob-sheet-h: 65vh;
+  }
+
+  /* Tighten logo */
+  .logo-sub  { display: none; }
+  .logo-leaf { width: 26px; height: 26px; }
+  .logo-title { font-size: 0.88rem; }
+
+  /* Nav left side tighter */
+  .tn-left { gap: 0.35rem; }
+
+  /* Panel padding: tighter on small phones */
+  .panel-section { padding: 1rem 1rem 1.75rem; }
+
+  /* Threats modes: single column on smallest phones */
+  .th-mode-group { grid-template-columns: 1fr; }
+
+  /* Year selector: horizontally scrollable strip */
+  .th-year-group {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+  .th-year-group::-webkit-scrollbar { display: none; }
+  .th-year-btn { flex-shrink: 0; }
+
+  /* Popup: even tighter */
+  .leaflet-popup-content-wrapper { max-width: 260px !important; }
+  .leaflet-popup-content         { max-width: 240px !important; }
+
+  /* Species grid: single column */
+  .species-grid { grid-template-columns: 1fr; }
+
+  /* Layers dropdown full-width */
+  #layers-dropdown { left: 0; right: 0; }
+
+  /* Nav mobile grid: 2 columns instead of 3 */
+  .mob-nav-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ============================================================
+   23. TOUCH DEVICES — disable expensive hover effects
+   ============================================================ */
+@media (hover: none) {
+  /* Tap feedback replaces hover */
+  .tn-item:hover,
+  .tn-layers-btn:hover,
+  .th-mode-btn:hover,
+  .th-year-btn:hover,
+  .th-cat-btn:hover,
+  .theme-btn:hover,
+  .filter-btn:hover,
+  .pts-btn:hover   { background: unset; color: unset; border-color: unset; }
+
+  .tn-item:active         { background: var(--primary-pale); color: var(--primary); }
+  .th-mode-btn:active     { background: rgba(27,94,59,0.08); }
+  .th-year-btn:active     { background: rgba(200,168,64,0.12); }
+  .mob-nav-btn:hover      { background: var(--primary-pale); }
+
+  /* Skip zoom-blur on pinch — there is no scroll zoom on touch */
+  #map-main.map-zooming { filter: none; }
 }
 
 /* ============================================================
