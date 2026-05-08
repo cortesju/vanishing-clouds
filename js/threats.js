@@ -526,11 +526,20 @@ function _thClearFireLayers() {
   }
 }
 
+// ── Centralized mode-switch cleanup ──────────────────────────────────────
+// Called at the top of EVERY mode apply function before loading anything new.
+// Clears every possible layer type so modes never stack on top of each other.
 function _thClearOverlays() {
-  // VectorTile GL layer
+  // Close any open popup immediately (bound popups on removed layers can linger)
+  if (_thMap) _thMap.closePopup();
+
+  // Hide legend right away — new mode's legend will show after its layers load
+  _thHideLegend();
+
+  // VectorTile GL canvas (land-cover timeline, threat category, total change)
   _thHideVtLayer();
 
-  // Leaflet tileLayer (legacy/fallback path — kept for safety)
+  // Leaflet tileLayer (legacy / fallback path — kept for safety)
   if (_thActiveOverlay && _thMap) {
     if (_thMap.hasLayer(_thActiveOverlay)) _thMap.removeLayer(_thActiveOverlay);
     _thActiveOverlay = null;
@@ -548,13 +557,14 @@ function _thClearOverlays() {
     _thUrbanRiskLayer = null;
   }
 
-  // FeatureLayer — páramo reference underlay (threat mode only)
+  // FeatureLayer — páramo reference underlay (threat-category mode only)
   if (_thParamoRefLayer && _thMap) {
     if (_thMap.hasLayer(_thParamoRefLayer)) _thMap.removeLayer(_thParamoRefLayer);
     _thParamoRefLayer = null;
   }
 
-  // Fire layers
+  // Fire layers (density raster, points GeoJSON, frequency polygons, fire ref outline)
+  // Also stops the play-animation timer and resets the play button label.
   _thClearFireLayers();
 }
 
@@ -1400,7 +1410,9 @@ function _thShowFireFrequency() {
 //   Leaflet popups       — always above via #map-popup-overlay (z=9000)
 
 function _thApplyFire() {
-  _thClearFireLayers();
+  // _thClearOverlays() (not just _thClearFireLayers) so the VectorTile canvas
+  // from a previous land-cover or threat mode is also hidden before fire loads.
+  _thClearOverlays();
   _thRestoreBasemap();
 
   // Add páramo outline first (goes into fireRefPane z=462).
