@@ -19,7 +19,7 @@ const PANEL_TEMPLATES = {
     <div class="panel-section overview-panel">
       <span class="panel-eyebrow">EXPLORE</span>
       <h1 class="panel-title">Vanishing Clouds</h1>
-      <p class="panel-lead">Colombia's páramo ecosystems hold the water, carbon, and life of a continent — and they are disappearing.</p>
+      <p class="panel-lead">Colombia's páramo ecosystems hold the water, carbon, and life of a continent, and they are disappearing.</p>
 
       <div class="panel-stats">
         <div class="pstat">
@@ -164,11 +164,11 @@ const PANEL_TEMPLATES = {
     <div class="panel-section threats-panel">
       <span class="panel-eyebrow">THREATS</span>
       <h2 class="panel-title">Threats to Páramo Ecosystems</h2>
-      <p class="panel-lead">Land-cover change, agriculture expansion, urban pressure, mining, pasture, and fire disturbance — 1986 to 2024.</p>
+      <p class="panel-lead">Land-cover change, agriculture expansion, urban pressure, mining, pasture, and fire disturbance, 1986 to 2024.</p>
 
       <!-- Intro card -->
       <div class="th-intro-card">
-        <p>Páramos are protected by elevation, climate, and isolation — but not from land-use pressure. Explore how agriculture, pasture, urban growth, mining, and fire have encroached on páramo landscapes from 1986 to 2024, using MapBiomas Colombia annual land-cover maps.</p>
+        <p>Páramos are protected by elevation, climate, and isolation, but not from land-use pressure. Explore how agriculture, pasture, urban growth, mining, and fire have encroached on páramo landscapes from 1986 to 2024, using MapBiomas Colombia annual land-cover maps.</p>
       </div>
 
       <!-- View mode selector -->
@@ -223,7 +223,7 @@ const PANEL_TEMPLATES = {
       </div>
 
       <div id="th-ctx-totalchange" class="th-mode-context" style="display:none">
-        <p>Areas where one or more threat categories — agriculture, pasture, urban, or mining — changed during the study period within the páramo buffer zone. A quick overall pressure footprint.</p>
+        <p>Areas where one or more threat categories (agriculture, pasture, urban, or mining) changed during the study period within the páramo buffer zone. A quick overall pressure footprint.</p>
       </div>
 
       <div id="th-ctx-fire" class="th-mode-context" style="display:none">
@@ -240,7 +240,7 @@ const PANEL_TEMPLATES = {
             <input type="range" id="th-fire-year-slider" min="2012" max="2024" value="2024" step="1">
             <button id="th-fire-play-btn" class="th-play-btn">▶ Play</button>
           </div>
-          <div class="th-fire-year-range">2012 — 2024</div>
+          <div class="th-fire-year-range">2012-2024</div>
         </div>
       </div>
 
@@ -252,6 +252,7 @@ const PANEL_TEMPLATES = {
       <span class="panel-eyebrow">CONSERVATION</span>
       <h2 class="panel-title">Where Protection Matters Most</h2>
       <p class="panel-lead">A composite urgency score combining endemic richness, habitat loss, and threat pressure across 45 hexagonal zones.</p>
+      <p class="urgency-boundary-note" style="font-size:0.78rem;color:var(--text-medium);background:rgba(27,94,59,0.06);border-radius:6px;padding:0.5rem 0.75rem;margin-bottom:0.75rem;">Urgency scores are shown only within official páramo boundaries.</p>
       <div class="urgency-legend-panel">
         <div class="legend-item"><span class="legend-color" style="background:#FFFFCC;border:1px solid #ccc"></span> Very Low (1–2)</div>
         <div class="legend-item"><span class="legend-color" style="background:#C7E9B4"></span> Low (2–3)</div>
@@ -290,7 +291,7 @@ const PANEL_TEMPLATES = {
     <div class="panel-section build-panel">
       <span class="panel-eyebrow">GEOGRAPHY</span>
       <h2 class="panel-title">Build a Páramo</h2>
-      <p class="panel-lead">Stack the environmental conditions that allow páramos to form — and watch the geography respond layer by layer.</p>
+      <p class="panel-lead">Stack the environmental conditions that allow páramos to form, and watch the geography respond layer by layer.</p>
 
       <!-- What does a páramo need? -->
       <div class="bp-intro-card">
@@ -299,6 +300,12 @@ const PANEL_TEMPLATES = {
           <strong>What does a páramo need?</strong>
           <p>Páramos are not random. They emerge where five conditions converge: high elevation, cold temperatures, abundant moisture, tropical latitude, and the specific architecture of the Andes. Toggle each condition below to build the picture.</p>
         </div>
+      </div>
+
+      <!-- Pan/zoom tip -->
+      <div class="bp-tip-card">
+        <span class="bp-tip-icon">🌍</span>
+        <p>Tip: Pan and zoom around the globe to compare where páramo-like conditions appear outside Colombia.</p>
       </div>
 
       <!-- Status bar -->
@@ -322,7 +329,7 @@ const PANEL_TEMPLATES = {
               <span class="bp-switch-track"><span class="bp-switch-thumb"></span></span>
             </label>
           </div>
-          <p class="bp-layer-desc">Páramos form above the Andean tree line. Elevation controls temperature, UV intensity, and atmospheric pressure — it is the physical stage on which every other condition plays out. Without altitude, the other factors cannot exist in their páramo form.</p>
+          <p class="bp-layer-desc">Páramos form above the Andean tree line. Elevation controls temperature, UV intensity, and atmospheric pressure: it is the physical stage on which every other condition plays out. Without altitude, the other factors cannot exist in their páramo form.</p>
           <div class="bp-layer-swatch"></div>
         </div>
 
@@ -338,7 +345,7 @@ const PANEL_TEMPLATES = {
               <span class="bp-switch-track"><span class="bp-switch-thumb"></span></span>
             </label>
           </div>
-          <p class="bp-layer-desc">Mean annual temperatures between 2 °C and 10 °C define the thermal niche of páramo life. Unlike polar environments, páramos experience freeze-thaw cycles daily, not seasonally — temperatures can swing 20 °C in 24 hours, compressing a whole year of climate variation into a single day.</p>
+          <p class="bp-layer-desc">Mean annual temperatures between 2 °C and 10 °C define the thermal niche of páramo life. Unlike polar environments, páramos experience freeze-thaw cycles daily, not seasonally. Temperatures can swing 20 °C in 24 hours, compressing a whole year of climate variation into a single day.</p>
           <div class="bp-layer-swatch"></div>
         </div>
 
@@ -354,7 +361,7 @@ const PANEL_TEMPLATES = {
               <span class="bp-switch-track"><span class="bp-switch-thumb"></span></span>
             </label>
           </div>
-          <p class="bp-layer-desc">Páramos need persistent moisture, cloud cover, and rainfall — but the model looks for an ideal moisture range, not simply the wettest places on Earth. Higher scores indicate precipitation conditions that better match páramo ecosystems. Areas that are too dry or excessively wet can receive lower suitability scores.</p>
+          <p class="bp-layer-desc">Páramos need persistent moisture, cloud cover, and rainfall, but the model looks for an ideal moisture range, not simply the wettest places on Earth. Higher scores indicate precipitation conditions that better match páramo ecosystems. Areas that are too dry or excessively wet can receive lower suitability scores.</p>
           <div class="bp-layer-swatch"></div>
         </div>
 
@@ -370,7 +377,7 @@ const PANEL_TEMPLATES = {
               <span class="bp-switch-track"><span class="bp-switch-thumb"></span></span>
             </label>
           </div>
-          <p class="bp-layer-desc">This layer combines the temperature suitability score and the precipitation suitability score to show where both climate conditions align for páramo formation. High scores do not mean "more climate" or "more seasonality" — they mean the area has a stronger match between the ideal cool temperature range and the ideal moisture range for páramo ecosystems.</p>
+          <p class="bp-layer-desc">This layer combines the temperature suitability score and the precipitation suitability score to show where both climate conditions align for páramo formation. High scores do not mean "more climate" or "more seasonality." They indicate the area has a stronger match between the ideal cool temperature range and the ideal moisture range for páramo ecosystems.</p>
           <div class="bp-layer-formula">
             <span class="bp-formula-chip">🌡 Temperature</span>
             <span class="bp-formula-op">+</span>
@@ -388,7 +395,7 @@ const PANEL_TEMPLATES = {
         <div class="bp-eq-context-icon">🌐</div>
         <div class="bp-eq-context-text">
           <strong>Equatorial Influence</strong>
-          <p>Páramos exist only where extreme Andean elevation meets equatorial solar patterns. This warm gold band — always visible on the map — marks the tropical latitude zone (11°N – 5°S) where year-round intense solar radiation makes high-altitude páramo conditions possible. The equator line shows where influence is highest.</p>
+          <p>Páramos exist only where extreme Andean elevation meets equatorial solar patterns. This warm gold band (always visible on the map) marks the tropical latitude zone (11°N – 5°S) where year-round intense solar radiation makes high-altitude páramo conditions possible. The equator line shows where influence is highest.</p>
         </div>
       </div>
 
@@ -397,7 +404,7 @@ const PANEL_TEMPLATES = {
       <!-- Suitability composite -->
       <div class="bp-composite-section">
         <span class="species-section-label">SUITABILITY COMPOSITE</span>
-        <p class="bp-composite-desc">View the full modeled suitability surface. <strong>Bright green areas</strong> indicate the highest suitability — Colombia's páramo belt and equivalent zones worldwide. Activate any environmental layer to unlock.</p>
+        <p class="bp-composite-desc">View the full modeled suitability surface. <strong>Bright green areas</strong> indicate the highest suitability: Colombia's páramo belt and equivalent zones worldwide. Activate any environmental layer to unlock.</p>
         <button id="bp-composite-btn" class="bp-composite-btn" disabled title="Activate an environmental layer first">
           <span class="bp-composite-icon">◎</span>
           Show Suitability Composite
@@ -414,8 +421,8 @@ const PANEL_TEMPLATES = {
       <div id="bp-interpretation" class="bp-interpretation hidden">
         <div class="insight-box">
           <h4>What this tells us</h4>
-          <p>Páramos are not accidents of nature. They arise where tropical latitude, Andean topography, high elevation, cool temperatures, and persistent moisture all converge — and nowhere is that overlap more concentrated than in Colombia's three cordilleras.</p>
-          <p style="margin-top:0.5rem">Páramos emerge where tropical latitude and high Andean elevation overlap. Colombia contains one of the largest continuous regions on Earth where equatorial climate, mountain elevation, moisture, and alpine conditions converge simultaneously — making its páramos globally irreplaceable.</p>
+          <p>Páramos are not accidents of nature. They arise where tropical latitude, Andean topography, high elevation, cool temperatures, and persistent moisture all converge, and nowhere is that overlap more concentrated than in Colombia's three cordilleras.</p>
+          <p style="margin-top:0.5rem">Páramos emerge where tropical latitude and high Andean elevation overlap. Colombia contains one of the largest continuous regions on Earth where equatorial climate, mountain elevation, moisture, and alpine conditions converge simultaneously, making its páramos globally irreplaceable.</p>
           <p style="margin-top:0.5rem">Compare the suitability model with the official IAvH polygons: they should align closely over the established páramo belt, with divergence at transition zones where ecological classification is genuinely ambiguous.</p>
         </div>
         <div class="bp-suitability-legend">
@@ -466,7 +473,7 @@ const PANEL_TEMPLATES = {
         </div>
         <div class="limitation-item">
           <strong>📊 Occurrence ≠ Abundance</strong>
-          <p>A species with 1,000 records may not be more common than one with 10 — it may simply be more photographed.</p>
+          <p>A species with 1,000 records may not be more common than one with 10. It may simply be more photographed.</p>
         </div>
         <div class="limitation-item">
           <strong>📅 Historical Uncertainty</strong>
@@ -481,6 +488,13 @@ const PANEL_TEMPLATES = {
       <div class="citation-box" style="margin-top:1.5rem;">
         <em>Vanishing Clouds</em>: Mapping the Hidden Decline of Colombia's Páramo Ecosystems, 2024.<br>
         Data: GBIF (CC BY 4.0) · Instituto Humboldt · MapBiomas Colombia · NASA FIRMS
+      </div>
+
+      <div class="about-credit" style="margin-top:1.5rem;padding:1rem 1.2rem;background:rgba(27,94,59,0.06);border-radius:10px;border-left:3px solid var(--primary);">
+        <p style="margin:0 0 0.3rem;font-size:0.82rem;color:var(--text-medium);font-weight:600;">Created by</p>
+        <p style="margin:0 0 0.2rem;font-size:0.9rem;color:var(--text-dark);font-weight:700;">Juan Sebastian Cortes</p>
+        <p style="margin:0 0 0.4rem;font-size:0.78rem;color:var(--text-medium);">M.S. Geographic Information Science and Technology<br>USC Spatial Sciences Institute</p>
+        <p style="margin:0;font-size:0.82rem;"><a href="mailto:Sebastian.co.fe@gmail.com" style="color:var(--primary);text-decoration:none;">Sebastian.co.fe@gmail.com</a></p>
       </div>
     </div>
   `,

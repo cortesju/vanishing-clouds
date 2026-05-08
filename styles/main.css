@@ -1909,6 +1909,11 @@ body.terrain-active #side-panel {
   margin-bottom: 40px !important;
 }
 
+/* When terrain cross-section is open, push scale bar + north arrow above it */
+body.terrain-active .leaflet-control-scale {
+  margin-bottom: calc(var(--profile-h) + var(--data-strip-h) + 14px) !important;
+}
+
 .leaflet-control-scale-line {
   background: rgba(255, 255, 255, 0.82) !important;
   backdrop-filter: blur(8px);
@@ -3447,4 +3452,27 @@ body.terrain-active #side-panel {
   width: 10px;
   height: 10px;
   min-width: 10px;
+}
+
+/* ── Build tip card ────────────────────────────────────────── */
+.bp-tip-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  background: rgba(27,94,59,0.07);
+  border-radius: 8px;
+  border-left: 3px solid var(--primary);
+  padding: 0.65rem 0.9rem;
+  margin-bottom: 1rem;
+}
+.bp-tip-card .bp-tip-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.bp-tip-card p {
+  margin: 0;
+  font-size: 0.80rem;
+  color: var(--text-medium);
+  line-height: 1.5;
 }

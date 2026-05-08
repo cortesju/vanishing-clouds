@@ -148,6 +148,7 @@ let terrainLayer    = null;   // L.esri.tiledMapLayer — Colombia terrain basem
 let vectorTileLayer = null;   // MapLibre GL map — base vector tile overlay (labels/roads)
 let detailTileLayer = null;   // MapLibre GL map — detail vector tiles (water/urban, zoom-gated)
 let hillshadeMapGL  = null;   // MapLibre GL map — hillshade overlay
+let satelliteLayer  = null;   // L.tileLayer — Esri World Imagery satellite basemap
 let _zoomControl    = null;   // Leaflet zoom control — stored so it can be repositioned
 
 // Detail layer user-controlled state (separate from zoom-gate visibility)
@@ -849,6 +850,7 @@ function buildParamoOutline() {
         `<div style="font-size:12px;padding:2px 4px;"><strong style="color:#C8A840">${name}</strong></div>`,
         { sticky: true, direction: 'top', opacity: 1 }
       );
+      layer.bindPopup(buildParamoPopup(p), { maxWidth: 300 });
     },
   });
 }
@@ -1292,7 +1294,15 @@ function buildThreatLayers() {
 function buildUrgencyLayer() {
   if (LG.urgencyHexagons) map.removeLayer(LG.urgencyHexagons);
 
-  LG.urgencyHexagons = L.geoJSON(DATA.urgency, {
+  // Filter to only features that have a paramo_name (i.e. are inside official boundaries)
+  const urgencyInside = DATA.urgency
+    ? { ...DATA.urgency, features: (DATA.urgency.features || []).filter(f => {
+        const nm = f.properties?.paramo_name;
+        return nm && String(nm).trim() !== '' && String(nm).toLowerCase() !== 'null';
+      }) }
+    : DATA.urgency;
+
+  LG.urgencyHexagons = L.geoJSON(urgencyInside, {
     style(feature) {
       const color = getUrgencyColor(feature.properties?.urgency_score || 0);
       return { fillColor: color, color: 'rgba(255,255,255,0.5)', weight: 0.8, fillOpacity: 0.75 };
@@ -1386,23 +1396,21 @@ function buildTooltipHTML(p) {
 
 function buildParamoPopup(p) {
   const name    = p.pacomplejo || p.pacodigo || 'Páramo';
-  const code    = p.pacodigo   || '—';
-  const distrit = p.padistrito || '—';
-  const sector  = p.pasector   || null;
-  const area    = p.paarea != null ? Number(p.paarea).toLocaleString(undefined, { maximumFractionDigits: 0 }) : null;
-  const cotaMax = p.pacotamax  != null ? Number(p.pacotamax).toLocaleString() + ' m' : '—';
-  const cotaMin = p.pacotamin  != null ? Number(p.pacotamin).toLocaleString() + ' m' : '—';
+  const code    = p.pacodigo   || 'Not available';
+  const distrit = p.padistrito || 'Not available';
+  const sector  = p.pasector   || 'Not available';
+  const area    = p.paarea != null ? Number(p.paarea).toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' ha' : 'Not available';
+  const cotaMax = p.pacotamax  != null ? Number(p.pacotamax).toLocaleString() + ' m' : 'Not available';
+  const cotaMin = p.pacotamin  != null ? Number(p.pacotamin).toLocaleString() + ' m' : 'Not available';
 
-  // Gradient header band — always renders.  Photo overlays on top; on error it hides
-  // itself and the gradient shows through.  No negative margins = no Leaflet layout fights.
   const imgUrl = _paramoImageForName(name);
   const imgHTML = `
     <div style="position:relative;height:140px;margin-bottom:10px;border-radius:8px;
                 overflow:hidden;
                 background:linear-gradient(135deg,#1B5E3B 0%,#2E7D52 55%,#C8A840 100%);">
-      ${imgUrl ? `<img src="${imgUrl}" alt="${name}" loading="lazy"
+      <img src="${imgUrl}" alt="${name}" loading="lazy"
            style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;"
-           onerror="this.style.display='none'">` : ''}
+           onerror="this.style.display='none'">
     </div>`;
 
   return `
@@ -1410,12 +1418,12 @@ function buildParamoPopup(p) {
       ${imgHTML}
       <h3 style="margin:0 0 4px;font-size:15px;color:#C8A840;border-bottom:1px solid #eee;padding-bottom:6px">${name}</h3>
       <table style="width:100%;font-size:12px;border-collapse:collapse;margin-top:6px">
-        <tr><td style="color:#888;padding:2px 0;width:45%">Código</td><td style="font-weight:600">${code}</td></tr>
-        <tr><td style="color:#888;padding:2px 0">Distrito</td><td style="font-weight:600">${distrit}</td></tr>
-        ${sector ? `<tr><td style="color:#888;padding:2px 0">Sector</td><td style="font-weight:600">${sector}</td></tr>` : ''}
-        ${area ? `<tr><td style="color:#888;padding:2px 0">Área</td><td style="font-weight:600">${area} ha</td></tr>` : ''}
-        <tr><td style="color:#888;padding:2px 0">Elevación máx</td><td style="font-weight:600">${cotaMax}</td></tr>
-        <tr><td style="color:#888;padding:2px 0">Elevación mín</td><td style="font-weight:600">${cotaMin}</td></tr>
+        <tr><td style="color:#888;padding:2px 0;width:45%">Code</td><td style="font-weight:600">${code}</td></tr>
+        <tr><td style="color:#888;padding:2px 0">District</td><td style="font-weight:600">${distrit}</td></tr>
+        <tr><td style="color:#888;padding:2px 0">Sector</td><td style="font-weight:600">${sector}</td></tr>
+        <tr><td style="color:#888;padding:2px 0">Area</td><td style="font-weight:600">${area}</td></tr>
+        <tr><td style="color:#888;padding:2px 0">Max elevation</td><td style="font-weight:600">${cotaMax}</td></tr>
+        <tr><td style="color:#888;padding:2px 0">Min elevation</td><td style="font-weight:600">${cotaMin}</td></tr>
       </table>
     </div>
   `;
@@ -1469,6 +1477,27 @@ window.setBasemapVisible = function(key, visible) {
     case 'hillshade': {
       const glDiv = document.getElementById('hillshade-gl');
       if (glDiv) glDiv.style.display = visible ? '' : 'none';
+      break;
+    }
+    case 'satellite': {
+      if (visible) {
+        if (!satelliteLayer) {
+          satelliteLayer = L.tileLayer(
+            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            { attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community', maxZoom: 19, pane: 'tilePane' }
+          );
+        }
+        if (map && !map.hasLayer(satelliteLayer)) {
+          satelliteLayer.addTo(map);
+          // Place satellite above terrain (z=200), below GL overlays
+          if (terrainLayer && map.hasLayer(terrainLayer)) terrainLayer.setOpacity(0);
+        }
+      } else {
+        if (satelliteLayer && map && map.hasLayer(satelliteLayer)) map.removeLayer(satelliteLayer);
+        // Restore terrain opacity
+        const terrainCheck = document.getElementById('gl-basemap-terrain');
+        if (terrainLayer && map && (terrainCheck ? terrainCheck.checked : true)) terrainLayer.setOpacity(0.78);
+      }
       break;
     }
     case 'vectortiles': {
@@ -1545,6 +1574,10 @@ window.setBasemapOpacity = function(key, opacity) {
     case 'hillshade': {
       const el = document.getElementById('hillshade-gl');
       if (el) el.style.opacity = opacity;
+      break;
+    }
+    case 'satellite': {
+      if (satelliteLayer) satelliteLayer.setOpacity(opacity);
       break;
     }
     case 'vectortiles': {

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vanishing Clouds — Colombia's Hidden Páramo Crisis</title>
+  <title>Vanishing Clouds: Colombia's Hidden Páramo Crisis</title>
 
 
   <!-- Leaflet CSS -->
@@ -181,9 +181,9 @@
         <input type="range" class="layer-opacity-slider" min="0" max="100" value="100" title="Opacity">
       </div>
 
-      <!-- Fire alerts: Build a Páramo and Urgency panels -->
+      <!-- Fire alerts: Build a Páramo panel only -->
       <div class="layer-row" draggable="true" data-layer-key="fire"
-           data-panels="build urgency">
+           data-panels="build">
         <span class="drag-handle" title="Drag to reorder">⠿</span>
         <input type="checkbox" id="gl-fire">
         <label for="gl-fire" class="layer-row-label">
@@ -227,6 +227,15 @@
           <span>Hillshade</span>
         </label>
         <input type="range" class="layer-opacity-slider" min="0" max="100" value="75" title="Opacity">
+      </div>
+
+      <div class="layer-row" data-basemap-key="satellite">
+        <input type="checkbox" id="gl-basemap-satellite">
+        <label for="gl-basemap-satellite" class="layer-row-label">
+          <span class="layer-swatch" style="background:linear-gradient(135deg,#1a3a1a,#4a7a4a)"></span>
+          <span>Satellite imagery</span>
+        </label>
+        <input type="range" class="layer-opacity-slider" min="0" max="100" value="100" title="Opacity">
       </div>
 
       <div class="layer-row" data-basemap-key="vectortiles">
