@@ -426,6 +426,11 @@ function initHillshadeOverlay() {
   map.on('move',    syncAllGL);
   map.on('moveend', syncAllGL);
   map.on('resize',  () => hillshadeMapGL && hillshadeMapGL.resize());
+
+  // Confirm layer order in console
+  const hsDiv = document.getElementById('hillshade-gl');
+  const hsZ   = hsDiv ? window.getComputedStyle(hsDiv).zIndex : '?';
+  console.log(`[maps.js] Hillshade GL canvas ready — CSS z-index: ${hsZ}, above terrain tile pane (200), mix-blend-mode: multiply`);
 }
 
 // ============================================================

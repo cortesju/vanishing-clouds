@@ -548,6 +548,9 @@ function switchPanel(panelId) {
   if (typeof window.onPanelChange === 'function') {
     window.onPanelChange(panelId);
   }
+
+  // Keep Map Layers dropdown in sync with the active panel
+  syncLayersDropdownToPanel(panelId);
 }
 
 // Called after panel HTML is injected — re-initializes sub-components
@@ -660,15 +663,29 @@ function initCounters() {
 // MAP LAYERS DROPDOWN  — visibility, opacity, drag-to-reorder
 // ============================================================
 
+// Show only the layer rows relevant to the active panel.
+// Each .layer-row in #data-layers-list carries a data-panels attribute
+// listing space-separated panel IDs where that row should be visible.
+// Rows without data-panels are shown everywhere (safe default).
+function syncLayersDropdownToPanel(panelId) {
+  document.querySelectorAll('#data-layers-list .layer-row').forEach(row => {
+    const attr   = (row.dataset.panels || '').trim();
+    const panels = attr ? attr.split(/\s+/) : null;
+    // Show if no restriction OR the current panel is listed
+    row.style.display = (!panels || panels.includes(panelId)) ? '' : 'none';
+  });
+}
+
 function initLayersDropdown() {
   const btn      = document.getElementById('map-layers-btn');
   const dropdown = document.getElementById('layers-dropdown');
   if (!btn || !dropdown) return;
 
-  // Open / close
+  // Open / close — sync visible rows every time the dropdown is opened
   btn.addEventListener('click', e => {
     e.stopPropagation();
     const isOpen = !dropdown.classList.contains('hidden');
+    if (!isOpen) syncLayersDropdownToPanel(activePanel);  // refresh before revealing
     dropdown.classList.toggle('hidden', isOpen);
     btn.classList.toggle('open', !isOpen);
   });
@@ -714,6 +731,9 @@ function initLayersDropdown() {
 
   // ── Drag-to-reorder (data layers only) ─────────────────────
   initDragReorder(document.getElementById('data-layers-list'));
+
+  // Initial sync — hide rows that don't belong on the default panel
+  syncLayersDropdownToPanel(activePanel);
 }
 
 // ============================================================

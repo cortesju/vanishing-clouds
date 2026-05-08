@@ -131,10 +131,14 @@
       Map Layers
     </h4>
 
-    <!-- Data layers — draggable, reorder by grabbing the ⠿ handle -->
+    <!-- Data layers — draggable, reorder by grabbing the ⠿ handle.
+         data-panels: space-separated panel IDs where this row is shown.
+         syncLayersDropdownToPanel() in main.js reads these to show/hide rows. -->
     <div class="layers-list" id="data-layers-list">
 
-      <div class="layer-row" draggable="true" data-layer-key="paramoFill">
+      <!-- Páramo boundaries: relevant to all non-build/threat panels -->
+      <div class="layer-row" draggable="true" data-layer-key="paramoFill"
+           data-panels="overview species timeline urgency about">
         <span class="drag-handle" title="Drag to reorder">⠿</span>
         <input type="checkbox" id="gl-paramo" checked>
         <label for="gl-paramo" class="layer-row-label">
@@ -144,7 +148,9 @@
         <input type="range" class="layer-opacity-slider" min="0" max="100" value="100" title="Opacity">
       </div>
 
-      <div class="layer-row" draggable="true" data-layer-key="speciesPoints">
+      <!-- Species occurrences: Species and Timeline panels only -->
+      <div class="layer-row" draggable="true" data-layer-key="speciesPoints"
+           data-panels="species timeline">
         <span class="drag-handle" title="Drag to reorder">⠿</span>
         <input type="checkbox" id="gl-species">
         <label for="gl-species" class="layer-row-label">
@@ -154,7 +160,9 @@
         <input type="range" class="layer-opacity-slider" min="0" max="100" value="100" title="Opacity">
       </div>
 
-      <div class="layer-row" draggable="true" data-layer-key="elevationZones">
+      <!-- Elevation zones: Build a Páramo only -->
+      <div class="layer-row" draggable="true" data-layer-key="elevationZones"
+           data-panels="build">
         <span class="drag-handle" title="Drag to reorder">⠿</span>
         <input type="checkbox" id="gl-elevation">
         <label for="gl-elevation" class="layer-row-label">
@@ -164,7 +172,9 @@
         <input type="range" class="layer-opacity-slider" min="0" max="100" value="100" title="Opacity">
       </div>
 
-      <div class="layer-row" draggable="true" data-layer-key="agriculture">
+      <!-- Agriculture pressure: Build a Páramo only -->
+      <div class="layer-row" draggable="true" data-layer-key="agriculture"
+           data-panels="build">
         <span class="drag-handle" title="Drag to reorder">⠿</span>
         <input type="checkbox" id="gl-agriculture">
         <label for="gl-agriculture" class="layer-row-label">
@@ -174,7 +184,9 @@
         <input type="range" class="layer-opacity-slider" min="0" max="100" value="100" title="Opacity">
       </div>
 
-      <div class="layer-row" draggable="true" data-layer-key="fire">
+      <!-- Fire alerts: Build a Páramo and Urgency panels -->
+      <div class="layer-row" draggable="true" data-layer-key="fire"
+           data-panels="build urgency">
         <span class="drag-handle" title="Drag to reorder">⠿</span>
         <input type="checkbox" id="gl-fire">
         <label for="gl-fire" class="layer-row-label">
@@ -184,7 +196,9 @@
         <input type="range" class="layer-opacity-slider" min="0" max="100" value="100" title="Opacity">
       </div>
 
-      <div class="layer-row" draggable="true" data-layer-key="urgencyHexagons">
+      <!-- Urgency index: Urgency panel only -->
+      <div class="layer-row" draggable="true" data-layer-key="urgencyHexagons"
+           data-panels="urgency">
         <span class="drag-handle" title="Drag to reorder">⠿</span>
         <input type="checkbox" id="gl-urgency">
         <label for="gl-urgency" class="layer-row-label">
@@ -215,7 +229,7 @@
           <span class="layer-swatch" style="background:linear-gradient(135deg,#555,#ddd)"></span>
           <span>Hillshade</span>
         </label>
-        <input type="range" class="layer-opacity-slider" min="0" max="100" value="75" title="Opacity">
+        <input type="range" class="layer-opacity-slider" min="0" max="100" value="35" title="Opacity">
       </div>
 
       <div class="layer-row" data-basemap-key="vectortiles">

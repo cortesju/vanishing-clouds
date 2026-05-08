@@ -98,21 +98,28 @@ a:hover { color: var(--primary); text-decoration: underline; }
   filter: blur(9px) brightness(0.97);
 }
 
-/* Hillshade GL canvas — sits between terrain (z=200) and vector tiles (z=450).
-   No CSS blend mode needed: hillshade uses transparent highlights + dark shadows
-   directly in MapLibre GL paint properties, visibly darkening mountain faces. */
+/* Hillshade GL canvas — z=260: above terrain tile pane (z=200) and detail tiles
+   (z=300 is detail, so hillshade at 260 is between terrain and detail which renders
+   on top, but that's fine since detail = water/urban bodies).
+   mix-blend-mode: multiply darkens shadow faces against the terrain; transparent
+   highlight pixels pass through unchanged.  filter nudges contrast very slightly.
+   opacity 0.35 keeps the effect subtle (user slider overrides inline). */
 #hillshade-gl {
   position: absolute;
   inset: 0;
-  z-index: 202;
+  z-index: 260;
   pointer-events: none;
-  opacity: 0.75;
+  opacity: 0.35;
+  mix-blend-mode: multiply;
+  filter: contrast(1.05) brightness(1.02);
 }
 
 #hillshade-gl .maplibregl-canvas-container,
 #hillshade-gl canvas {
   pointer-events: none !important;
   background: transparent !important;
+  /* Fallback: apply blend directly on canvas if container compositing fails */
+  mix-blend-mode: multiply;
 }
 
 /* Páramo golden metallic shimmer — pulses brightness and adds a gold glow */
