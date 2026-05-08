@@ -194,45 +194,72 @@ const PANEL_TEMPLATES = {
   threats: () => `
     <div class="panel-section threats-panel">
       <span class="panel-eyebrow">THREATS</span>
-      <h2 class="panel-title">How Páramos Are Changing</h2>
-      <p class="panel-lead">Agriculture, fire, urban growth, and mining are simultaneously transforming these ecosystems.</p>
-      <div class="layer-controls">
-        <h4>Toggle Layers</h4>
-        <label class="layer-toggle">
-          <input type="checkbox" id="toggle-agriculture" checked>
-          <span class="toggle-label agriculture">🌾 Agriculture expansion</span>
-        </label>
-        <label class="layer-toggle">
-          <input type="checkbox" id="toggle-fire" checked>
-          <span class="toggle-label fire">🔥 Fire alerts</span>
-        </label>
-        <label class="layer-toggle">
-          <input type="checkbox" id="toggle-urban">
-          <span class="toggle-label urban">🏙️ Urban pressure</span>
-        </label>
-        <label class="layer-toggle">
-          <input type="checkbox" id="toggle-mining">
-          <span class="toggle-label mining">⛏️ Mining zones</span>
-        </label>
+      <h2 class="panel-title">Threats to Páramo Ecosystems</h2>
+      <p class="panel-lead">Land-cover change, agriculture expansion, urban pressure, mining, pasture, and fire disturbance — 1986 to 2024.</p>
+
+      <!-- Intro card -->
+      <div class="th-intro-card">
+        <p>Páramos are protected by elevation, climate, and isolation — but not from land-use pressure. Explore how agriculture, pasture, urban growth, mining, and fire have encroached on páramo landscapes from 1986 to 2024, using MapBiomas Colombia annual land-cover maps.</p>
       </div>
-      <div class="threat-stats-list">
-        <div class="threat-stat agriculture">
-          <strong>34%</strong>
-          of adjacent land converted to agriculture since 1985
-        </div>
-        <div class="threat-stat fire">
-          <strong>2,847</strong>
-          fire alerts detected in páramo zones annually
-        </div>
-        <div class="threat-stat urban">
-          <strong>418 km²</strong>
-          of urban growth adjacent to páramos since 2000
-        </div>
-        <div class="threat-stat mining">
-          <strong>196</strong>
-          active mining concessions overlapping or adjacent to páramos
+
+      <!-- View mode selector -->
+      <div class="th-section-label">View mode</div>
+      <div class="th-mode-group">
+        <button class="th-mode-btn active" data-mode="landcover">🗂 Land-cover timeline</button>
+        <button class="th-mode-btn" data-mode="threat">⚠ Threat category by year</button>
+        <button class="th-mode-btn" data-mode="agexpansion">🌾 Agriculture expansion by páramo</button>
+        <button class="th-mode-btn" data-mode="totalchange">📊 Total land-cover change</button>
+        <button class="th-mode-btn" data-mode="fire">🔥 Fire pressure</button>
+      </div>
+
+      <!-- Year selector — hidden for modes that don't need it -->
+      <div id="th-year-section">
+        <div class="th-section-label">Year</div>
+        <div class="th-year-group">
+          <button class="th-year-btn" data-year="1986">1986</button>
+          <button class="th-year-btn" data-year="2000">2000</button>
+          <button class="th-year-btn" data-year="2010">2010</button>
+          <button class="th-year-btn" data-year="2020">2020</button>
+          <button class="th-year-btn active" data-year="2024">2024</button>
         </div>
       </div>
+
+      <!-- Category selector — only visible in threat mode -->
+      <div id="th-cat-section" class="th-cat-section" style="display:none">
+        <div class="th-section-label">Threat category</div>
+        <div class="th-cat-group">
+          <button class="th-cat-btn active" data-category="agriculture" style="--cat-color:#C9930A">🌾 Agriculture</button>
+          <button class="th-cat-btn" data-category="pasture" style="--cat-color:#C8651A">🐄 Pasture</button>
+          <button class="th-cat-btn" data-category="urban" style="--cat-color:#C0392B">🏙 Urban</button>
+          <button class="th-cat-btn" data-category="mining" style="--cat-color:#6B3FA0">⛏ Mining</button>
+        </div>
+      </div>
+
+      <!-- Mode context cards — only the active mode's card is shown -->
+      <div id="th-ctx-landcover" class="th-mode-context">
+        <p>Select a year to compare MapBiomas Colombia land-cover maps clipped to the páramo buffer zone. Watch how vegetation, agriculture, pasture, and urban areas have shifted over nearly four decades.</p>
+      </div>
+
+      <div id="th-ctx-threat" class="th-mode-context" style="display:none">
+        <p>Select a threat category and year to display a binary raster showing where that land-use type was present in the páramo buffer zone. Only one category is shown at a time.</p>
+      </div>
+
+      <div id="th-ctx-agexpansion" class="th-mode-context" style="display:none">
+        <p>Each páramo complex is colored by how much agriculture increased inside or around its boundary over the full study period. Click any polygon to see its expansion category and change value.</p>
+      </div>
+
+      <div id="th-ctx-totalchange" class="th-mode-context" style="display:none">
+        <p>Areas where one or more threat categories — agriculture, pasture, urban, or mining — changed during the study period within the páramo buffer zone. A quick overall pressure footprint.</p>
+      </div>
+
+      <div id="th-ctx-fire" class="th-mode-context" style="display:none">
+        <div class="th-coming-soon">
+          <div class="th-coming-soon-icon">🔥</div>
+          <strong>Fire Pressure — Coming Soon</strong>
+          <p>Fire alerts from VIIRS/MODIS will be used to estimate fire density and fire frequency around páramo ecosystems, identifying areas repeatedly exposed to burning or recent fire activity.</p>
+        </div>
+      </div>
+
     </div>
   `,
 
@@ -549,9 +576,9 @@ function afterPanelRender(panelId) {
   }
 
   if (panelId === 'threats') {
-    // Re-wire threat layer toggles
-    if (typeof window.initThreatToggles === 'function') {
-      window.initThreatToggles();
+    // Wire threats.js interactive controls
+    if (typeof window.wireThreatsPanel === 'function') {
+      window.wireThreatsPanel();
     }
   }
 

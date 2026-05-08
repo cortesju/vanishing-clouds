@@ -208,7 +208,8 @@ const PANEL_LAYERS = {
   build:     [],
   species:   ['paramoOutline', 'gbifPointsLayer'],   // GBIF points are the default theme
   timeline:  ['paramoOutline', 'speciesPoints'],
-  threats:   ['paramoOutline', 'agriculture', 'fire'],
+  // threats: managed entirely by threats.js — no base layers from PANEL_LAYERS
+  threats:   [],
   urgency:   ['urgencyHexagons', 'paramoOutline'],
   about:     ['paramoFill', 'paramoOutline'],
 };
@@ -1372,6 +1373,10 @@ window.onPanelChange = function(panelId) {
     if (LG.gbifPointsLayer && map.hasLayer(LG.gbifPointsLayer)) map.removeLayer(LG.gbifPointsLayer);
     if (gbifHeatLayer && map.hasLayer(gbifHeatLayer)) map.removeLayer(gbifHeatLayer);
   }
+  // Remove threats-panel overlays when leaving (state preserved for next visit)
+  if (_mapActivePanel === 'threats' && panelId !== 'threats') {
+    if (typeof window.cleanupThreatsPanel === 'function') window.cleanupThreatsPanel();
+  }
   // Remove build-panel overlays when leaving (layer state preserved for next visit)
   if (_mapActivePanel === 'build' && panelId !== 'build') {
     if (typeof window.cleanupBuildPanel === 'function') window.cleanupBuildPanel();
@@ -1430,10 +1435,7 @@ window.onPanelChange = function(panelId) {
     }
   }
 
-  // Threats panel: re-wire checkboxes after content injection
-  if (panelId === 'threats') {
-    setTimeout(wireThreatToggles, 100);
-  }
+  // Threats panel: wiring is handled by threats.js via main.js afterPanelRender
 };
 
 // Wire threat layer checkboxes (threats panel injects them dynamically)
