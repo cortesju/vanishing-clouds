@@ -309,7 +309,7 @@ function initMap() {
     url: TERRAIN_URL,
     attribution: 'Custom terrain basemap',
     maxZoom: 18,
-    opacity: 1,
+    opacity: 0.78,
   }).addTo(map);
 
   // ---- LAYER 2: Hillshade — dedicated MapLibre GL canvas at z=202 ----
@@ -1195,6 +1195,40 @@ function buildUrgencyLayer() {
 // POPUP BUILDERS
 // ============================================================
 
+// ---- Páramo popup images ----
+// Keys are the exact pacomplejo values from the ArcGIS service (case-insensitive match).
+// Add or update entries as photos become available.
+// Any match is used at 100% width, 140px tall, cover-fit.
+// PARAMO_IMAGE_FALLBACK is shown when no match is found (null = hide image block).
+const PARAMO_IMAGES = {
+  'chingaza':              'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Parque_Nacional_Natural_Chingaza.jpg/960px-Parque_Nacional_Natural_Chingaza.jpg',
+  'sumapaz':               'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Superp%C3%A1ramo_del_Sumapaz.jpg/960px-Superp%C3%A1ramo_del_Sumapaz.jpg',
+  'los nevados':           'https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Nevado_del_Ruiz_2007.jpg/960px-Nevado_del_Ruiz_2007.jpg',
+  'cocuy':                 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Cocuy-flor.jpg/960px-Cocuy-flor.jpg',
+  'sierra nevada de santa marta': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Sierra_Nevada_de_Santa_Marta.jpg/960px-Sierra_Nevada_de_Santa_Marta.jpg',
+  'pisba':                 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Paramo_de_Pisba.jpg/960px-Paramo_de_Pisba.jpg',
+  'belmira':               'https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/P%C3%A1ramo_de_Belmira.jpg/960px-P%C3%A1ramo_de_Belmira.jpg',
+  'frontino-sol':          'https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Paramo_de_Frontino.jpg/960px-Paramo_de_Frontino.jpg',
+};
+// Shown when no entry matches — a generic high-altitude Andean landscape.
+// Set to null to simply omit the image block for unknown páramos.
+const PARAMO_IMAGE_FALLBACK = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Paramo_Colombia.jpg/960px-Paramo_Colombia.jpg';
+
+/**
+ * Returns the best image URL for a given páramo name, or PARAMO_IMAGE_FALLBACK.
+ * Matching is case-insensitive and substring-based so "Complejo Chingaza" hits "chingaza".
+ * @param {string} name — the pacomplejo value from the feature properties
+ * @returns {string|null}
+ */
+function _paramoImageForName(name) {
+  if (!name) return PARAMO_IMAGE_FALLBACK;
+  const lower = name.toLowerCase();
+  for (const [key, url] of Object.entries(PARAMO_IMAGES)) {
+    if (lower.includes(key)) return url;
+  }
+  return PARAMO_IMAGE_FALLBACK;
+}
+
 function buildTooltipHTML(p) {
   const name = p.pacomplejo || p.pacodigo || 'Páramo';
   const area = p.paarea != null ? Number(p.paarea).toLocaleString(undefined, { maximumFractionDigits: 0 }) : null;
@@ -1214,8 +1248,20 @@ function buildParamoPopup(p) {
   const area    = p.paarea != null ? Number(p.paarea).toLocaleString(undefined, { maximumFractionDigits: 0 }) : null;
   const cotaMax = p.pacotamax  != null ? Number(p.pacotamax).toLocaleString() + ' m' : '—';
   const cotaMin = p.pacotamin  != null ? Number(p.pacotamin).toLocaleString() + ' m' : '—';
+
+  // Image — hide entire block on load error (broken URL or CORS block)
+  const imgUrl = _paramoImageForName(name);
+  const imgHTML = imgUrl ? `
+    <div style="margin:-12px -14px 10px;overflow:hidden;border-radius:12px 12px 0 0;">
+      <img src="${imgUrl}"
+           alt="${name}"
+           style="width:100%;height:140px;object-fit:cover;display:block;"
+           onerror="this.parentElement.style.display='none'">
+    </div>` : '';
+
   return `
-    <div style="padding:12px 14px;min-width:220px;">
+    <div style="padding:12px 14px;min-width:220px;max-width:280px;">
+      ${imgHTML}
       <h3 style="margin:0 0 4px;font-size:15px;color:#C8A840;border-bottom:1px solid #eee;padding-bottom:6px">${name}</h3>
       <table style="width:100%;font-size:12px;border-collapse:collapse;margin-top:6px">
         <tr><td style="color:#888;padding:2px 0;width:45%">Código</td><td style="font-weight:600">${code}</td></tr>

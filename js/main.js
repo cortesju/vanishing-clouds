@@ -664,15 +664,23 @@ function initCounters() {
 // ============================================================
 
 // Show only the layer rows relevant to the active panel.
-// Each .layer-row in #data-layers-list carries a data-panels attribute
-// listing space-separated panel IDs where that row should be visible.
-// Rows without data-panels are shown everywhere (safe default).
+// Each .layer-row in #data-layers-list (and optionally #basemap-layers-list) can carry a
+// data-panels attribute listing space-separated panel IDs where that row is visible.
+// Rows without data-panels are shown on every panel (safe default).
 function syncLayersDropdownToPanel(panelId) {
+  // Data layers — all tagged rows; untagged rows are always visible
   document.querySelectorAll('#data-layers-list .layer-row').forEach(row => {
     const attr   = (row.dataset.panels || '').trim();
     const panels = attr ? attr.split(/\s+/) : null;
-    // Show if no restriction OR the current panel is listed
     row.style.display = (!panels || panels.includes(panelId)) ? '' : 'none';
+  });
+  // Basemap layers — only rows that carry a data-panels attribute are filtered;
+  // rows without it (terrain, hillshade, vector tiles) remain visible everywhere.
+  document.querySelectorAll('#basemap-layers-list .layer-row').forEach(row => {
+    const attr = (row.dataset.panels || '').trim();
+    if (!attr) return;                          // no restriction → always visible
+    const panels = attr.split(/\s+/);
+    row.style.display = panels.includes(panelId) ? '' : 'none';
   });
 }
 
