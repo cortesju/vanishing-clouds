@@ -1815,6 +1815,21 @@ body.terrain-active #side-panel {
   font-family: "Helvetica Neue", HelveticaNeue, Helvetica, Arial, sans-serif !important;
 }
 
+/* ── Popup/tooltip hoist overlay ─────────────────────────────────────────────
+   Lives as the last child of #map-main, after all GL canvases.
+   z=9000 guarantees it paints above #vector-tile-gl (z=450) and
+   #threats-vt-gl (z=460) whose positive z-indexes would otherwise
+   bury .leaflet-map-pane's stacking context (which has z-index:auto).
+   pointer-events:none lets map clicks pass through; Leaflet re-enables
+   pointer-events on .leaflet-popup itself via its own stylesheet.        */
+#map-popup-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 9000;
+  pointer-events: none;
+  overflow: visible;   /* popups that extend outside the map area must still show */
+}
+
 .leaflet-popup-content-wrapper {
   border-radius: var(--radius) !important;
   box-shadow: var(--shadow-md) !important;

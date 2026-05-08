@@ -375,6 +375,59 @@ function initMap() {
 
   // Load all data then build initial layers
   loadAllData();
+
+  // ── Hoist popup + tooltip panes above GL canvases ─────────────────────────
+  // ROOT CAUSE: .leaflet-map-pane has z-index:auto (no explicit value), which
+  // puts Leaflet's entire stacking context BELOW any sibling with a positive
+  // z-index (#vector-tile-gl z=450, #threats-vt-gl z=460).  Even though the
+  // Leaflet popup pane has z=700 *inside* its stacking context, it is buried
+  // under the GL canvases in the outer context.
+  //
+  // FIX: move .leaflet-popup-pane and .leaflet-tooltip-pane into a new overlay
+  // div (#map-popup-overlay) that is appended AFTER all GL canvases in DOM
+  // order and carries z-index:9000.  The panning transform that Leaflet applies
+  // to .leaflet-map-pane is mirrored onto the popup pane on every 'move' event
+  // so popups continue to track their anchor point correctly during drag.
+  _hoistPopupPane();
+}
+
+// ============================================================
+// POPUP PANE HOIST
+// Moves Leaflet's popup + tooltip panes into a high-z overlay so
+// they render above the MapLibre GL canvases (#vector-tile-gl z=450,
+// #threats-vt-gl z=460) whose sibling position in #map-main would
+// otherwise bury them.
+// ============================================================
+function _hoistPopupPane() {
+  if (!map) return;
+
+  // Create the overlay as the LAST child of #map-main so DOM order also
+  // puts it above the GL canvases (belt-and-suspenders with z-index).
+  const overlay = document.createElement('div');
+  overlay.id = 'map-popup-overlay';
+  document.getElementById('map-main').appendChild(overlay);
+
+  // Detach Leaflet's popup and tooltip panes from .leaflet-map-pane and
+  // re-parent them into the overlay.
+  const popupPane   = map.getPane('popup');
+  const tooltipPane = map.getPane('tooltip');
+  if (popupPane)   overlay.appendChild(popupPane);
+  if (tooltipPane) overlay.appendChild(tooltipPane);
+
+  // Leaflet pans the map by updating .leaflet-map-pane's CSS transform, not
+  // by moving individual elements.  Now that the panes live outside that
+  // stacking context we must mirror the same transform so popups track their
+  // anchor latLng during mid-drag (Leaflet only calls _updatePosition on
+  // moveend/zoomend, not on every frame).
+  const mapPane = document.querySelector('.leaflet-map-pane');
+  function _syncPopupTransform() {
+    const t = mapPane ? mapPane.style.transform : '';
+    if (popupPane)   popupPane.style.transform = t;
+    if (tooltipPane) tooltipPane.style.transform = t;
+  }
+  map.on('move', _syncPopupTransform);
+  _syncPopupTransform();   // apply current transform right away
+  console.log('[maps.js] Popup/tooltip panes hoisted above GL canvases (#map-popup-overlay z=9000)');
 }
 
 // ============================================================
