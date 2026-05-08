@@ -73,6 +73,10 @@ const AGRICULTURE_EXPANSION_PARAMOS_URL = 'https://services1.arcgis.com/ZIL9uO23
 // Urban proximity risk per páramo polygon
 const URBAN_RISK_PARAMOS_URL = 'https://services1.arcgis.com/ZIL9uO234SBBPGL7/arcgis/rest/services/ParamosProximitytourbanrisk/FeatureServer/0';
 
+// Páramo reference polygons — same service used by maps.js overview/species panels.
+// Shown as a subtle underlay in "Threat category by year" mode only.
+const PARAMO_REFERENCE_URL = 'https://services1.arcgis.com/ZIL9uO234SBBPGL7/arcgis/rest/services/Paramos_de_Colombia_CopyFeatures/FeatureServer/0';
+
 // ── Fire pressure (placeholder — data added later) ──
 const FIRE_DENSITY_LAYER_URL   = null;
 const FIRE_FREQUENCY_LAYER_URL = null;
@@ -81,10 +85,15 @@ const FIRE_FREQUENCY_LAYER_URL = null;
 // CONFIGURATION
 // ============================================================
 
-// Threat category display props + per-year VectorTileServer URL lookup
+// Threat category display props + per-year VectorTileServer URL lookup.
+// vtColor — exact fill-color read from the published VectorTileServer style JSON
+//           (the color actually visible on the map).
+// color   — UI accent used for panel buttons / tooltips (can differ from vtColor).
 const TH_CATEGORIES = {
   agriculture: {
-    label: 'Agriculture', icon: '🌾', color: '#C9930A',
+    label: 'Agriculture', icon: '🌾',
+    color:   '#C9930A',    // UI accent (amber)
+    vtColor: '#A8A800',    // actual layer fill: olive-green (Agri*Poly style)
     urls: {
       '1986': AGRICULTURE_1986_URL,
       '2000': AGRICULTURE_2000_URL,
@@ -94,7 +103,9 @@ const TH_CATEGORIES = {
     },
   },
   pasture: {
-    label: 'Pasture', icon: '🐄', color: '#C8651A',
+    label: 'Pasture', icon: '🐄',
+    color:   '#C8651A',    // UI accent (burnt orange)
+    vtColor: '#A87000',    // actual layer fill: amber-brown (Past*Poly style)
     urls: {
       '1986': PASTURE_1986_URL,
       '2000': PASTURE_2000_URL,   // ⚠ see PASTURE_2000_URL note above
@@ -104,7 +115,9 @@ const TH_CATEGORIES = {
     },
   },
   urban: {
-    label: 'Urban', icon: '🏙', color: '#C0392B',
+    label: 'Urban', icon: '🏙',
+    color:   '#555555',    // UI accent (dark gray)
+    vtColor: '#343434',    // actual layer fill: dark charcoal (Urban*Poly style)
     urls: {
       '1986': URBAN_1986_URL,
       '2000': URBAN_2000_URL,
@@ -114,7 +127,9 @@ const TH_CATEGORIES = {
     },
   },
   mining: {
-    label: 'Mining', icon: '⛏', color: '#6B3FA0',
+    label: 'Mining', icon: '⛏',
+    color:   '#D73027',    // UI accent (red)
+    vtColor: '#E60000',    // actual layer fill: bright red (Min*Poly style)
     urls: {
       '1986': MINING_1986_URL,
       '2000': MINING_2000_URL,
@@ -202,6 +217,7 @@ let _thLoadGeneration  = 0;             // incremented on each load; stale callb
 let _thActiveOverlay   = null;          // Leaflet tileLayer (fallback/future use)
 let _thAgExpLayer      = null;          // featureLayer — agriculture expansion
 let _thUrbanRiskLayer  = null;          // featureLayer — urban proximity risk
+let _thParamoRefLayer  = null;          // featureLayer — páramo reference (threat mode only)
 
 // Floating legend DOM node
 let _thLegendEl        = null;
@@ -465,6 +481,12 @@ function _thClearOverlays() {
     if (_thMap.hasLayer(_thUrbanRiskLayer)) _thMap.removeLayer(_thUrbanRiskLayer);
     _thUrbanRiskLayer = null;
   }
+
+  // FeatureLayer — páramo reference underlay (threat mode only)
+  if (_thParamoRefLayer && _thMap) {
+    if (_thMap.hasLayer(_thParamoRefLayer)) _thMap.removeLayer(_thParamoRefLayer);
+    _thParamoRefLayer = null;
+  }
 }
 
 // ============================================================
@@ -517,21 +539,27 @@ function _thShowLegend(mode) {
 
     case 'threat': {
       const cat = TH_CATEGORIES[_thCategory];
+      // vtColor = actual fill color from the published VectorTileServer style JSON
+      const vc  = cat.vtColor;
       el.innerHTML = `
-        <div class="th-legend-title" style="color:${cat.color}">${cat.icon} ${cat.label} · ${_thYear}</div>
+        <div class="th-legend-title" style="color:${vc}">${cat.icon} ${cat.label} · ${_thYear}</div>
         <div class="th-legend-rows">
           <div class="th-legend-row">
             <span class="th-swatch th-swatch--empty"></span>
-            No ${cat.label.toLowerCase()} detected
+            No presence detected
           </div>
           <div class="th-legend-row">
-            <span class="th-swatch" style="background:${cat.color}"></span>
+            <span class="th-swatch" style="background:${vc}"></span>
             ${cat.label} presence
+          </div>
+          <div class="th-legend-row" style="margin-top:3px;padding-top:3px;border-top:1px solid rgba(0,0,0,0.07)">
+            <span class="th-swatch" style="background:#F5ECC8;border:1px solid #5A7A3A"></span>
+            Páramo boundary
           </div>
         </div>
         <div class="th-legend-note">
-          ArcGIS VectorTileServer · presence of ${cat.label.toLowerCase()} land-use in ${_thYear}.
-          ${(_thCategory === 'pasture' && _thYear === '2000') ? '<br><em>⚠ Pasture 2000 uses the 2020 layer — correct URL pending.</em>' : ''}
+          VectorTileServer · ${cat.label.toLowerCase()} presence · ${_thYear}.
+          ${(_thCategory === 'pasture' && _thYear === '2000') ? '<br><em>⚠ Pasture 2000 uses the 2020 layer.</em>' : ''}
         </div>
       `;
       break;
@@ -638,6 +666,34 @@ function _thApplyLandcover() {
   _thShowLegend('landcover');
 }
 
+// ── Páramo reference underlay (threat mode only) ──────────────────────────
+// Loaded once per threat-mode activation (idempotent).  Sits in threatsRefPane
+// (z=455), which is above the basemap overlay pane (400) but below the GL
+// canvas (z=460), so the threat VT layer always draws on top of it.
+function _thShowParamoRef() {
+  if (_thParamoRefLayer) return;   // already on map from a previous year/cat switch
+
+  _thParamoRefLayer = L.esri.featureLayer({
+    url:  PARAMO_REFERENCE_URL,
+    pane: 'threatsRefPane',
+    style() {
+      return {
+        fillColor:   '#F5ECC8',   // pale cream — very subtle
+        fillOpacity: 0.15,
+        color:       '#5A7A3A',   // muted dark-green outline
+        weight:      1.0,
+        opacity:     0.65,
+      };
+    },
+    // No popups/tooltips — this is a silent reference layer
+  });
+
+  _thParamoRefLayer.addTo(_thMap);
+  _thParamoRefLayer.once('load', () =>
+    console.log('[threats.js] Páramo reference layer loaded')
+  );
+}
+
 // B. Threat category × year — single binary VectorTileServer layer
 function _thApplyThreat() {
   _thClearOverlays();
@@ -649,6 +705,7 @@ function _thApplyThreat() {
   }
 
   _thSimplifyBasemap();
+  _thShowParamoRef();   // add subtle páramo boundary underlay (z=455, below GL canvas)
   _thLoadVtLayer(url, `${cat ? cat.label : 'Threat'} ${_thYear}`);
   _thShowLegend('threat');
 }
@@ -953,6 +1010,15 @@ function initThreatsPanel() {
     const pane = _thMap.createPane('threatsPane');
     pane.style.zIndex = 460;
     pane.style.pointerEvents = 'none';
+  }
+
+  // Reference underlay pane — sits BELOW the GL canvas (z=460) but ABOVE
+  // the basemap overlay pane (z=400), so reference polygons are always behind
+  // the active threat VT layer.
+  if (!_thMap.getPane('threatsRefPane')) {
+    const refPane = _thMap.createPane('threatsRefPane');
+    refPane.style.zIndex = 455;
+    refPane.style.pointerEvents = 'none';
   }
 
   _thInitGlMap();   // create the VT GL canvas
