@@ -1249,15 +1249,17 @@ function buildParamoPopup(p) {
   const cotaMax = p.pacotamax  != null ? Number(p.pacotamax).toLocaleString() + ' m' : '—';
   const cotaMin = p.pacotamin  != null ? Number(p.pacotamin).toLocaleString() + ' m' : '—';
 
-  // Image — hide entire block on load error (broken URL or CORS block)
+  // Gradient header band — always renders.  Photo overlays on top; on error it hides
+  // itself and the gradient shows through.  No negative margins = no Leaflet layout fights.
   const imgUrl = _paramoImageForName(name);
-  const imgHTML = imgUrl ? `
-    <div style="margin:-12px -14px 10px;overflow:hidden;border-radius:12px 12px 0 0;">
-      <img src="${imgUrl}"
-           alt="${name}"
-           style="width:100%;height:140px;object-fit:cover;display:block;"
-           onerror="this.parentElement.style.display='none'">
-    </div>` : '';
+  const imgHTML = `
+    <div style="position:relative;height:140px;margin-bottom:10px;border-radius:8px;
+                overflow:hidden;
+                background:linear-gradient(135deg,#1B5E3B 0%,#2E7D52 55%,#C8A840 100%);">
+      ${imgUrl ? `<img src="${imgUrl}" alt="${name}"
+           style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;"
+           onerror="this.style.display='none'">` : ''}
+    </div>`;
 
   return `
     <div style="padding:12px 14px;min-width:220px;max-width:280px;">

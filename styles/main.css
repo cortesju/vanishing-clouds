@@ -377,14 +377,15 @@ a:hover { color: var(--primary); text-decoration: underline; }
   transform: translateX(0);
   transition: transform var(--transition), height var(--transition);
   will-change: transform;
-  overflow: hidden;   /* clip the ::before fog layer to panel bounds */
+  /* NOTE: no overflow:hidden — the collapse tab is position:absolute;left:100%
+     and must not be clipped. The ::before fog uses inset:0 so no overflow needed. */
 }
 
 /* Animated misty radial blob drifting behind the panel content */
 #side-panel::before {
   content: '';
   position: absolute;
-  inset: -20%;                 /* oversize so edges stay soft as it drifts */
+  inset: 0;                    /* stay within panel bounds; gradients fade naturally */
   background:
     radial-gradient(ellipse 70% 50% at 30% 40%, rgba(200,220,210,0.18) 0%, transparent 70%),
     radial-gradient(ellipse 55% 65% at 75% 65%, rgba(230,240,255,0.14) 0%, transparent 65%);
