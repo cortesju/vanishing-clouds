@@ -160,37 +160,6 @@ const PANEL_TEMPLATES = {
     </div>
   `,
 
-  timeline: () => `
-    <div class="panel-section timeline-panel">
-      <span class="panel-eyebrow">RECORDS</span>
-      <h2 class="panel-title">Through Time</h2>
-      <p class="panel-lead">How our knowledge of páramo biodiversity has grown — and what it reveals about scientific bias.</p>
-      <div class="time-controls">
-        <button class="time-btn active" data-period="all">All</button>
-        <button class="time-btn" data-period="before-1980">Pre-1980</button>
-        <button class="time-btn" data-period="1980-1999">1980–99</button>
-        <button class="time-btn" data-period="2000-2010">2000s</button>
-        <button class="time-btn" data-period="2011-2020">2010s</button>
-        <button class="time-btn" data-period="2021-present">2020s</button>
-      </div>
-      <p id="record-count" class="record-count-display"></p>
-      <div class="timeline-legend">
-        <span class="legend-dot" style="background:#5B2C8D"></span>Pre-1980
-        <span class="legend-dot" style="background:#2874A6"></span>1980–99
-        <span class="legend-dot" style="background:#148F77"></span>2000s
-        <span class="legend-dot" style="background:#E67E22"></span>2010s
-        <span class="legend-dot" style="background:#27AE60"></span>2020s
-      </div>
-      <div class="chart-container">
-        <canvas id="records-chart"></canvas>
-      </div>
-      <div class="insight-box">
-        <h4>What the data tells us</h4>
-        <p>The surge in post-2011 records corresponds with smartphone adoption and the rise of iNaturalist — not necessarily more species in the field.</p>
-      </div>
-    </div>
-  `,
-
   threats: () => `
     <div class="panel-section threats-panel">
       <span class="panel-eyebrow">THREATS</span>
@@ -579,17 +548,6 @@ function afterPanelRender(panelId) {
       window.renderSpeciesHexLegend(
         (window.SPECIES_HEX_THEMES && window._activeSpeciesTheme) || 'richness'
       );
-    }
-  }
-
-  if (panelId === 'timeline') {
-    // Re-wire time buttons
-    if (typeof window.initTimeslider === 'function') {
-      window.initTimeslider();
-    }
-    // Re-init chart
-    if (typeof window.initRecordsChart === 'function') {
-      setTimeout(() => window.initRecordsChart(), 50);
     }
   }
 

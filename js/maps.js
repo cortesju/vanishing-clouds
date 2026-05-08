@@ -207,7 +207,6 @@ const PANEL_LAYERS = {
   // The compare toggle in the panel can optionally surface paramoFill.
   build:     [],
   species:   ['paramoOutline', 'gbifPointsLayer'],   // GBIF points are the default theme
-  timeline:  ['paramoOutline', 'speciesPoints'],
   // threats: managed entirely by threats.js — no base layers from PANEL_LAYERS
   threats:   [],
   urgency:   ['urgencyHexagons', 'paramoOutline'],
@@ -712,22 +711,6 @@ async function _ensurePanelLayers(panelId) {
       buildSpeciesHexLayer();
       buildGbifPointsLayer();
       console.timeEnd('[perf] load:species-layers');
-      break;
-    }
-
-    case 'timeline': {
-      // Local GeoJSON for the time-period circle markers.
-      console.time('[perf] load:timeline-geojson');
-      if (!DATA.species) {
-        try {
-          const r = await fetch('data/species_occurrences.geojson');
-          DATA.species = await r.json();
-        } catch (e) {
-          console.warn('[maps.js] Timeline GeoJSON failed:', e.message);
-        }
-      }
-      buildSpeciesPoints('all');
-      console.timeEnd('[perf] load:timeline-geojson');
       break;
     }
 
@@ -1338,37 +1321,51 @@ function buildUrgencyLayer() {
 // ============================================================
 
 // ---- Páramo popup images ----
-// Keys are the exact pacomplejo values from the ArcGIS service (case-insensitive match).
-// Add or update entries as photos become available.
-// Any match is used at 100% width, 140px tall, cover-fit.
-// PARAMO_IMAGE_FALLBACK is shown when no match is found (null = hide image block).
-const PARAMO_IMAGES = {
-  'chingaza':              'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Parque_Nacional_Natural_Chingaza.jpg/960px-Parque_Nacional_Natural_Chingaza.jpg',
-  'sumapaz':               'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Superp%C3%A1ramo_del_Sumapaz.jpg/960px-Superp%C3%A1ramo_del_Sumapaz.jpg',
-  'los nevados':           'https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Nevado_del_Ruiz_2007.jpg/960px-Nevado_del_Ruiz_2007.jpg',
-  'cocuy':                 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Cocuy-flor.jpg/960px-Cocuy-flor.jpg',
-  'sierra nevada de santa marta': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Sierra_Nevada_de_Santa_Marta.jpg/960px-Sierra_Nevada_de_Santa_Marta.jpg',
-  'pisba':                 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Paramo_de_Pisba.jpg/960px-Paramo_de_Pisba.jpg',
-  'belmira':               'https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/P%C3%A1ramo_de_Belmira.jpg/960px-P%C3%A1ramo_de_Belmira.jpg',
-  'frontino-sol':          'https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Paramo_de_Frontino.jpg/960px-Paramo_de_Frontino.jpg',
-};
-// Shown when no entry matches — a generic high-altitude Andean landscape.
-// Set to null to simply omit the image block for unknown páramos.
-const PARAMO_IMAGE_FALLBACK = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Paramo_Colombia.jpg/960px-Paramo_Colombia.jpg';
+// All images are served from the local Photos/ folder (relative to index.html).
+// Images are assigned to páramos by hashing the feature name and cycling through
+// the array — every popup shows a real photo, no blank containers.
+// To assign specific images to specific páramos later, replace this array with
+// a lookup table keyed by pacomplejo value.
+const PARAMO_POPUP_IMAGES = [
+  'Photos/pexels-andrea-beltran-329102829-13834163.jpg',
+  'Photos/pexels-higarcia-13542634.jpg',
+  'Photos/pexels-juan-felipe-ramirez-312591454-17370936.jpg',
+  'Photos/pexels-juan-felipe-ramirez-312591454-17398429.jpg',
+  'Photos/pexels-juan-felipe-ramirez-312591454-17398435.jpg',
+  'Photos/pexels-juan-felipe-ramirez-312591454-17398452.jpg',
+  'Photos/pexels-juan-felipe-ramirez-312591454-28154523.jpg',
+  'Photos/pexels-juan-felipe-ramirez-312591454-28154527.jpg',
+  'Photos/pexels-juan-felipe-ramirez-312591454-28154580.jpg',
+  'Photos/pexels-juan-felipe-ramirez-312591454-28154615.jpg',
+  'Photos/pexels-juan-felipe-ramirez-312591454-28154634.jpg',
+  'Photos/pexels-juan-felipe-ramirez-312591454-28154864.jpg',
+  'Photos/pexels-juan-felipe-ramirez-312591454-28154865.jpg',
+  'Photos/pexels-juan-felipe-ramirez-312591454-28154920.jpg',
+  'Photos/pexels-julia-volk-5197969.jpg',
+];
 
 /**
- * Returns the best image URL for a given páramo name, or PARAMO_IMAGE_FALLBACK.
- * Matching is case-insensitive and substring-based so "Complejo Chingaza" hits "chingaza".
+ * Simple non-cryptographic string hash — maps a name to a stable integer.
+ * Used to pick a consistent image per páramo name without a lookup table.
+ */
+function _hashParamoName(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(31, h) + str.charCodeAt(i) | 0;
+  }
+  return Math.abs(h);
+}
+
+/**
+ * Returns a local photo path for any páramo name.
+ * Every name maps to a stable image via hash — no blank containers.
  * @param {string} name — the pacomplejo value from the feature properties
- * @returns {string|null}
+ * @returns {string}
  */
 function _paramoImageForName(name) {
-  if (!name) return PARAMO_IMAGE_FALLBACK;
-  const lower = name.toLowerCase();
-  for (const [key, url] of Object.entries(PARAMO_IMAGES)) {
-    if (lower.includes(key)) return url;
-  }
-  return PARAMO_IMAGE_FALLBACK;
+  const key   = name ? name.trim() : 'default';
+  const index = _hashParamoName(key) % PARAMO_POPUP_IMAGES.length;
+  return PARAMO_POPUP_IMAGES[index];
 }
 
 function buildTooltipHTML(p) {
