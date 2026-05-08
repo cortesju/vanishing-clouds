@@ -125,36 +125,59 @@ const TH_CATEGORIES = {
   },
 };
 
-// Land-cover class legend — MapBiomas classes.
-// Update colors/labels to match actual ArcGIS symbology when available.
+// Land-cover class legend — derived directly from the LCPoly VectorTileServer
+// style (root.json _symbol field values and fill-color paint properties).
+// Ordered alphabetically as in the service; colors are exact hex values from
+// the published ArcGIS style.
 const TH_LANDCOVER_CLASSES = [
-  { color: '#1B5E3B', label: 'Native vegetation / Forest' },
-  { color: '#66BB6A', label: 'Grassland / Páramo heath' },
-  { color: '#F9D76B', label: 'Agriculture (cropland)' },
-  { color: '#D4813A', label: 'Pasture' },
-  { color: '#C0392B', label: 'Urban / Built-up' },
-  { color: '#6B3FA0', label: 'Mining' },
-  { color: '#5C9BD4', label: 'Water bodies' },
-  { color: '#C8C8C8', label: 'Other / Unclassified' },
+  { color: '#00E6A9', label: 'Andean Herbaceous and Shrubby Vegetation' },
+  { color: '#73DFFF', label: 'Aquaculture' },
+  { color: '#FFFFBE', label: 'Beach, dune and sand spot',                   border: true },
+  { color: '#BED2FF', label: 'Flooded Andean Herbaceous and Shrubby Veg.' },
+  { color: '#73B2FF', label: 'Flooded forest' },
+  { color: '#267300', label: 'Forest' },
+  { color: '#A8A800', label: 'Forest plantation' },
+  { color: '#FFFFFF', label: 'Glacier',                                      border: true },
+  { color: '#343434', label: 'Infrastructure' },
+  { color: '#A80000', label: 'Mining' },
+  { color: '#CDAA66', label: 'Mosaic of agriculture and pasture' },
+  { color: '#C8C8C8', label: 'Not observed',                                 border: true },
+  { color: '#BEFFE8', label: 'Other natural non-vegetated area' },
+  { color: '#CDCD66', label: 'Other non-forest formation' },
+  { color: '#BEFFE8', label: 'Other non-vegetated area' },
+  { color: '#00A9E6', label: 'River, lake or ocean' },
+  { color: '#828282', label: 'Rocky outcrop' },
+  { color: '#00E6A9', label: 'Wetland' },
 ];
 
-// Agriculture expansion — 5-class graduated ramp (low → very high)
-const TH_AG_EXP_CLASSES = [
-  { color: '#F5F0E8', label: 'No increase' },
-  { color: '#F9D76B', label: 'Low increase' },
-  { color: '#E8A238', label: 'Moderate increase' },
-  { color: '#C0541B', label: 'High increase' },
-  { color: '#7B1209', label: 'Very high increase' },
+// Agriculture expansion — 5-class graduated ramp.
+// Field: VALUE_12 (the column is literally "VALUE_12"; the service aliases it
+// as "VALUE_1" in the renderer but L.esri.featureLayer returns the real name).
+// Breaks and colors match the ArcGIS classBreaks renderer exactly.
+// An extra "No data" entry handles null / zero values.
+const TH_AG_EXP_BREAKS = [
+  { min: 0,               max: 4230748.092123,   color: '#EAF3F8', label: 'Very low increase',  border: true },
+  { min: 4230748.092124,  max: 10434999.204721,  color: '#B9D7EA', label: 'Low increase' },
+  { min: 10434999.204722, max: 19686077.901982,  color: '#9E8AC6', label: 'Moderate increase' },
+  { min: 19686077.901983, max: 63101331.304162,  color: '#8E3FA8', label: 'High increase' },
+  { min: 63101331.304163, max: Infinity,         color: '#7A0177', label: 'Very high increase' },
 ];
+// Separate no-data entry (not part of classification loop)
+const TH_AG_EXP_NODATA = { color: '#D1D5DB', label: 'No data', border: true };
 
-// Urban proximity risk — 5-class graduated ramp (very low → very high)
+// Urban proximity risk — 5-class graduated ramp.
+// Field: NEAR_DIST (normalized proximity distance to urban areas).
+// Scale is INVERTED: smaller (more negative) NEAR_DIST = closer to urban = higher risk.
+// Break thresholds derived from the published classBreaks renderer.
+// Index 0 = lowest risk (yellow), index 4 = highest risk (dark red).
 const TH_URBAN_RISK_CLASSES = [
-  { color: '#FFF5F0', label: 'Very low risk' },
-  { color: '#FCBBA1', label: 'Low risk' },
-  { color: '#FB6A4A', label: 'Moderate risk' },
-  { color: '#CB181D', label: 'High risk' },
-  { color: '#67000D', label: 'Very high risk' },
+  { color: '#FFF7BC', label: 'Very low risk',  border: true },  // NEAR_DIST > 0.082391
+  { color: '#FEC44F', label: 'Low risk' },                      // 0.046735 – 0.082391
+  { color: '#FE9929', label: 'Moderate risk' },                 // 0.018562 – 0.046734
+  { color: '#D95F0E', label: 'High risk' },                     // -0.999999 – 0.018561
+  { color: '#B10026', label: 'Very high risk' },                // ≤ -1 (within / adjacent to urban)
 ];
+const TH_URBAN_RISK_NODATA = { color: '#D1D5DB', label: 'No data', border: true };
 
 // ============================================================
 // MODULE STATE
@@ -319,6 +342,18 @@ async function _thFetchStyle(url) {
     });
   }
 
+  // 4. Remove opaque background layers — ArcGIS VT styles often include a
+  //    background fill layer with opacity:1.  If we leave it, the entire GL
+  //    canvas fills with a solid colour and hides the Leaflet basemap.
+  if (Array.isArray(style.layers)) {
+    style.layers.forEach(layer => {
+      if (layer.type === 'background') {
+        if (!layer.paint) layer.paint = {};
+        layer.paint['background-opacity'] = 0;
+      }
+    });
+  }
+
   _thStyleCache[url] = style;
   return style;
 }
@@ -335,19 +370,23 @@ async function _thLoadVtLayer(url, label) {
     return;
   }
 
-  // Same URL already displayed — nothing to do
+  // Same URL already displayed — just ensure it is visible
   if (_thCurrentVtUrl === url) {
-    _thGlContainer.style.display = '';
-    _thGlContainer.style.opacity = '1';
+    // resize() in case the canvas was ever 0×0
+    _thGlMap.resize();
+    _thGlContainer.style.opacity = '0.9';
     return;
   }
 
   // Claim this load slot; any in-flight load with a lower gen will abort
   const gen = ++_thLoadGeneration;
 
-  // Fade out during transition
+  // Fade out during transition (opacity only — never touch display)
   _thGlContainer.style.opacity = '0';
-  _thGlContainer.style.display = '';
+
+  // Ensure the GL canvas has correct dimensions before setStyle().
+  // This is critical when the panel was hidden on first init.
+  _thGlMap.resize();
 
   try {
     const style = await _thFetchStyle(url);
@@ -360,8 +399,9 @@ async function _thLoadVtLayer(url, label) {
     const fadeInTimeout = setTimeout(() => {
       if (gen !== _thLoadGeneration || fadeInDone) return;
       fadeInDone = true;
-      _thGlContainer.style.opacity = '1';
-      console.log(`[threats.js] Threats layer loaded (fallback): ${label}`);
+      _thGlMap.resize();
+      _thGlContainer.style.opacity = '0.9';
+      console.log(`[threats.js] Threats layer shown (fallback timer): ${label}`);
     }, 3000);
 
     _thGlMap.once('style.load', () => {
@@ -369,7 +409,8 @@ async function _thLoadVtLayer(url, label) {
       clearTimeout(fadeInTimeout);
       if (!fadeInDone) {
         fadeInDone = true;
-        _thGlContainer.style.opacity = '1';
+        _thGlMap.resize();   // re-confirm dimensions after style swap
+        _thGlContainer.style.opacity = '0.9';
         console.log(`[threats.js] Threats layer loaded: ${label}`);
       }
     });
@@ -381,17 +422,19 @@ async function _thLoadVtLayer(url, label) {
   } catch (err) {
     console.error(`[threats.js] Threats layer failed: ${label} — ${err.message}`);
     if (gen === _thLoadGeneration) {
-      _thGlContainer.style.display = 'none';
+      // Keep canvas invisible via opacity; do NOT set display:none
+      _thGlContainer.style.opacity = '0';
       _thCurrentVtUrl = null;
     }
   }
 }
 
-// Hide the VT canvas without destroying the GL instance
+// Hide the VT canvas without destroying the GL instance.
+// Opacity-only: never set display:none (would re-introduce the 0×0 canvas bug).
 function _thHideVtLayer() {
   if (_thGlContainer) {
     _thGlContainer.style.opacity = '0';
-    _thGlContainer.style.display = 'none';
+    // deliberately NOT touching display
   }
   _thCurrentVtUrl = null;
   _thLoadGeneration++;  // cancel any in-flight load
@@ -445,24 +488,28 @@ function _thHideLegend() {
 function _thShowLegend(mode) {
   const el = _thGetLegendEl();
   el.style.display = 'block';
+  // Reset mode-specific modifier classes before applying new content
+  el.classList.remove('th-legend--landcover');
 
   switch (mode) {
 
     case 'landcover': {
-      // VT layers use service symbology — legend shows reference classes
+      // Colors and labels derived directly from the LCPoly VectorTileServer
+      // style (root.json _symbol values) — exact hex match to service symbology.
+      el.classList.add('th-legend--landcover');
       el.innerHTML = `
         <div class="th-legend-title">🗂 Land Cover · ${_thYear}</div>
         <div class="th-legend-rows">
           ${TH_LANDCOVER_CLASSES.map(c =>
             `<div class="th-legend-row">
-               <span class="th-swatch" style="background:${c.color}"></span>
+               <span class="th-swatch" style="background:${c.color}${c.border ? ';border:1px solid #bbb' : ''}"></span>
                ${c.label}
              </div>`
           ).join('')}
         </div>
         <div class="th-legend-note">
-          MapBiomas Colombia land-cover classification · páramo buffer zone.
-          Colors match the ArcGIS service symbology.
+          MapBiomas Colombia · páramo buffer zone · ${_thYear}.
+          Colors match the published ArcGIS style exactly.
         </div>
       `;
       break;
@@ -492,17 +539,22 @@ function _thShowLegend(mode) {
 
     case 'agexpansion': {
       el.innerHTML = `
-        <div class="th-legend-title">🌾 Agriculture Expansion</div>
+        <div class="th-legend-title">🌾 Agriculture Expansion by Páramo</div>
         <div class="th-legend-rows">
-          ${TH_AG_EXP_CLASSES.map((c, i) =>
+          ${TH_AG_EXP_BREAKS.map(c =>
             `<div class="th-legend-row">
-               <span class="th-swatch" style="background:${c.color}${i === 0 ? ';border:1px solid #ccc' : ''}"></span>
+               <span class="th-swatch" style="background:${c.color}${c.border ? ';border:1px solid #aaa' : ''}"></span>
                ${c.label}
              </div>`
           ).join('')}
+          <div class="th-legend-row">
+            <span class="th-swatch" style="background:${TH_AG_EXP_NODATA.color};border:1px solid #bbb"></span>
+            ${TH_AG_EXP_NODATA.label}
+          </div>
         </div>
         <div class="th-legend-note">
-          Increase in agriculture per páramo complex over the study period.
+          Agriculture expansion per páramo complex (field: VALUE_12, m²).
+          Graduated blue → purple ramp · 5 natural-break classes.
         </div>
       `;
       break;
@@ -512,15 +564,20 @@ function _thShowLegend(mode) {
       el.innerHTML = `
         <div class="th-legend-title">🏙 Urban Proximity Risk</div>
         <div class="th-legend-rows">
-          ${TH_URBAN_RISK_CLASSES.map((c, i) =>
+          ${TH_URBAN_RISK_CLASSES.map(c =>
             `<div class="th-legend-row">
-               <span class="th-swatch" style="background:${c.color}${i === 0 ? ';border:1px solid #ccc' : ''}"></span>
+               <span class="th-swatch" style="background:${c.color}${c.border ? ';border:1px solid #aaa' : ''}"></span>
                ${c.label}
              </div>`
           ).join('')}
+          <div class="th-legend-row">
+            <span class="th-swatch" style="background:${TH_URBAN_RISK_NODATA.color};border:1px solid #bbb"></span>
+            ${TH_URBAN_RISK_NODATA.label}
+          </div>
         </div>
         <div class="th-legend-note">
-          Risk rating per páramo complex based on proximity to urban areas.
+          Field: NEAR_DIST · lower value = closer to urban = higher risk.
+          Yellow → red graduated ramp · 5 natural-break classes.
         </div>
       `;
       break;
@@ -596,67 +653,98 @@ function _thApplyThreat() {
   _thShowLegend('threat');
 }
 
+// ── Agriculture expansion helpers ────────────────────────────────────────
+// The FeatureServer column is VALUE_12 (aliased "VALUE_1" in ArcGIS Pro —
+// L.esri.featureLayer returns the real column name in feature.properties).
+
+function _agExpBreakForValue(val) {
+  const v = Number(val);
+  if (val === null || val === undefined || isNaN(v)) return null;   // no-data
+  for (const b of TH_AG_EXP_BREAKS) {
+    if (v <= b.max) return b;
+  }
+  return TH_AG_EXP_BREAKS[TH_AG_EXP_BREAKS.length - 1];
+}
+
+function _agExpColorForValue(val) {
+  const b = _agExpBreakForValue(val);
+  return b ? b.color : TH_AG_EXP_NODATA.color;
+}
+
+function _agExpLabelForValue(val) {
+  const b = _agExpBreakForValue(val);
+  return b ? b.label : TH_AG_EXP_NODATA.label;
+}
+
 // C. Agriculture expansion by páramo — FeatureServer polygon layer
 function _thApplyAgExpansion() {
   _thClearOverlays();
-  _thRestoreBasemap();  // FeatureLayer works fine on the normal basemap
+  _thRestoreBasemap();
 
   console.log('[threats.js] Loading Threats layer: Agriculture expansion by páramo');
-
-  // Derive fill-color class index (1-based integer or string)
-  function _agExpIdx(feature) {
-    const p   = feature.properties || {};
-    const raw = p.ag_exp_cat     ?? p.ag_expansion_cat ?? p.expansion_cat
-              ?? p.agr_exp       ?? p.category          ?? p.CLASS        ?? 1;
-    const n = Number(raw);
-    return isNaN(n) ? 0 : Math.min(Math.max(0, Math.round(n) - 1), TH_AG_EXP_CLASSES.length - 1);
-  }
+  console.log('[threats.js] Ag-expansion field: VALUE_12 (service alias: VALUE_1)');
 
   _thAgExpLayer = L.esri.featureLayer({
-    url: AGRICULTURE_EXPANSION_PARAMOS_URL,
+    url:  AGRICULTURE_EXPANSION_PARAMOS_URL,
+    pane: 'threatsPane',
     style(feature) {
-      const color = TH_AG_EXP_CLASSES[_agExpIdx(feature)].color;
+      // Real column name returned by L.esri is VALUE_12 (alias VALUE_1 in ArcGIS Pro)
+      const val = feature.properties?.VALUE_12 ?? feature.properties?.VALUE_1 ?? null;
+      const isNoData = (val === null || val === undefined || Number(val) === 0);
+      if (isNoData) {
+        return {
+          fillColor:   TH_AG_EXP_NODATA.color,
+          fillOpacity: 0.45,
+          color:       'rgba(255,255,255,0.7)',
+          weight:      0.6,
+          opacity:     1,
+        };
+      }
       return {
-        fillColor:   color,
+        fillColor:   _agExpColorForValue(val),
         fillOpacity: 0.75,
-        color:       'rgba(0,0,0,0.18)',
-        weight:      0.9,
-        opacity:     0.85,
+        color:       'rgba(255,255,255,0.7)',
+        weight:      0.6,
+        opacity:     1,
       };
     },
     onEachFeature(feature, layer) {
-      const p    = feature.properties || {};
-      const name = p.pacomplejo || p.pacodigo || p.Nombre || p.nombre || p.name || 'Páramo';
-      const cat  = p.ag_exp_cat ?? p.ag_expansion_cat ?? p.expansion_cat ?? p.Categoria ?? '—';
-      const pct  = p.ag_exp_pct    != null ? `${Number(p.ag_exp_pct).toFixed(1)} %`
-                 : p.ag_change_pct != null ? `${Number(p.ag_change_pct).toFixed(1)} %`
-                 : p.cambio_agr    != null ? `${Number(p.cambio_agr).toFixed(1)} %`
-                 : '—';
+      const p       = feature.properties || {};
+      const name    = p.pacomplejo || p.pacodigo || p.Nombre || p.nombre || p.name || 'Páramo';
+      // VALUE_12 is the real column; VALUE_1 is its alias — try both
+      const rawVal  = p.VALUE_12 ?? p.VALUE_1 ?? null;
+      const catLabel = _agExpLabelForValue(rawVal);
+      const valFmt   = rawVal != null
+        ? Number(rawVal).toLocaleString('en-US', { maximumFractionDigits: 0 }) + ' m²'
+        : '—';
 
       layer.bindTooltip(
-        `<strong style="color:#8B4000;font-size:12px">${name}</strong>`,
+        `<strong style="color:#8E3FA8;font-size:12px">${name}</strong>`,
         { sticky: true, direction: 'top', opacity: 1 }
       );
       layer.bindPopup(`
         <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;
-                    padding:10px 13px;min-width:190px">
+                    padding:10px 13px;min-width:210px">
           <h4 style="margin:0 0 6px;font-size:13px;color:#C8A840;
                      border-bottom:1px solid #eee;padding-bottom:5px">${name}</h4>
           <table style="width:100%;font-size:12px;border-collapse:collapse">
             <tr>
-              <td style="color:#888;padding:2px 0">Expansion category</td>
-              <td style="font-weight:700;text-align:right">${cat}</td>
+              <td style="color:#888;padding:2px 0">Agriculture expansion</td>
+              <td style="font-weight:700;text-align:right">${valFmt}</td>
             </tr>
             <tr>
-              <td style="color:#888;padding:2px 0">Agriculture change</td>
-              <td style="font-weight:700;text-align:right">${pct}</td>
+              <td style="color:#888;padding:2px 0">Category</td>
+              <td style="font-weight:700;text-align:right">${catLabel}</td>
             </tr>
           </table>
         </div>
-      `, { maxWidth: 265 });
+      `, { maxWidth: 280 });
 
+      layer.on('click', function() {
+        console.log(`[threats.js] Ag-expansion clicked: ${name} | VALUE_12=${rawVal} | category="${catLabel}"`);
+      });
       layer.on('mouseover', function() {
-        this.setStyle({ fillOpacity: 0.95, weight: 2 });
+        this.setStyle({ fillOpacity: 0.92, color: '#1F2937', weight: 2 });
         this.bringToFront();
       });
       layer.on('mouseout', function() {
@@ -671,66 +759,87 @@ function _thApplyAgExpansion() {
   _thShowLegend('agexpansion');
 }
 
+// ── Urban risk classifier ─────────────────────────────────────────────────
+// Field: NEAR_DIST (normalized proximity distance to urban areas).
+// Scale is INVERTED: lower (more negative) value = closer to urban = higher risk.
+// Break thresholds match the published classBreaks renderer on ParamosProximitytourbanrisk.
+// Returns { idx, label } — idx is an index into TH_URBAN_RISK_CLASSES (0=very low, 4=very high).
+function _urbanRiskClassify(nearDist) {
+  if (nearDist === null || nearDist === undefined) return { idx: null, label: 'No data' };
+  const v = Number(nearDist);
+  if (isNaN(v))   return { idx: null, label: 'No data' };
+  if (v <= 0.018561)  return { idx: 4, label: 'Very high risk' };  // includes -1 (within/adjacent urban)
+  if (v <= 0.046734)  return { idx: 3, label: 'High risk' };
+  if (v <= 0.082391)  return { idx: 2, label: 'Moderate risk' };
+  if (v <= 0.554609)  return { idx: 1, label: 'Low risk' };
+  return                   { idx: 0, label: 'Very low risk' };
+}
+
 // D. Urban proximity risk — FeatureServer polygon layer
 function _thApplyUrbanRisk() {
   _thClearOverlays();
-  _thRestoreBasemap();  // FeatureLayer works fine on the normal basemap
+  _thRestoreBasemap();
 
   console.log('[threats.js] Loading Threats layer: Urban proximity risk by páramo');
-
-  function _urbanRiskIdx(feature) {
-    const p   = feature.properties || {};
-    const raw = p.risk_cat         ?? p.urban_risk_cat ?? p.proximity_risk
-              ?? p.risk_category   ?? p.categoria_r    ?? p.CLASS             ?? 1;
-    const n = Number(raw);
-    return isNaN(n) ? 0 : Math.min(Math.max(0, Math.round(n) - 1), TH_URBAN_RISK_CLASSES.length - 1);
-  }
+  console.log('[threats.js] Urban-risk field: NEAR_DIST (lower = closer to urban = higher risk)');
 
   _thUrbanRiskLayer = L.esri.featureLayer({
-    url: URBAN_RISK_PARAMOS_URL,
+    url:  URBAN_RISK_PARAMOS_URL,
+    pane: 'threatsPane',
     style(feature) {
-      const color = TH_URBAN_RISK_CLASSES[_urbanRiskIdx(feature)].color;
+      const nearDist = feature.properties?.NEAR_DIST ?? null;
+      const { idx }  = _urbanRiskClassify(nearDist);
+      if (idx === null) {
+        return {
+          fillColor:   TH_URBAN_RISK_NODATA.color,
+          fillOpacity: 0.45,
+          color:       'rgba(255,255,255,0.7)',
+          weight:      0.6,
+          opacity:     1,
+        };
+      }
       return {
-        fillColor:   color,
-        fillOpacity: 0.75,
-        color:       'rgba(0,0,0,0.18)',
-        weight:      0.9,
-        opacity:     0.85,
+        fillColor:   TH_URBAN_RISK_CLASSES[idx].color,
+        fillOpacity: 0.72,
+        color:       'rgba(255,255,255,0.7)',
+        weight:      0.6,
+        opacity:     1,
       };
     },
     onEachFeature(feature, layer) {
-      const p    = feature.properties || {};
-      const name = p.pacomplejo  || p.pacodigo || p.Nombre || p.nombre || p.name || 'Páramo';
-      const risk = p.risk_cat    ?? p.urban_risk_cat ?? p.proximity_risk ?? p.risk_category ?? p.Categoria ?? '—';
-      const dist = p.dist_urban_km != null ? `${Number(p.dist_urban_km).toFixed(1)} km`
-                 : p.proximity_km  != null ? `${Number(p.proximity_km).toFixed(1)} km`
-                 : p.dist_km       != null ? `${Number(p.dist_km).toFixed(1)} km`
-                 : '—';
+      const p         = feature.properties || {};
+      const name      = p.pacomplejo || p.pacodigo || p.Nombre || p.nombre || p.name || 'Páramo';
+      const nearDist  = p.NEAR_DIST ?? null;
+      const { label: riskLabel } = _urbanRiskClassify(nearDist);
+      const nearFmt   = nearDist != null ? Number(nearDist).toFixed(6) : '—';
 
       layer.bindTooltip(
-        `<strong style="color:#C0392B;font-size:12px">${name}</strong>`,
+        `<strong style="color:#D95F0E;font-size:12px">${name}</strong>`,
         { sticky: true, direction: 'top', opacity: 1 }
       );
       layer.bindPopup(`
         <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;
-                    padding:10px 13px;min-width:190px">
+                    padding:10px 13px;min-width:210px">
           <h4 style="margin:0 0 6px;font-size:13px;color:#C8A840;
                      border-bottom:1px solid #eee;padding-bottom:5px">${name}</h4>
           <table style="width:100%;font-size:12px;border-collapse:collapse">
             <tr>
-              <td style="color:#888;padding:2px 0">Urban risk category</td>
-              <td style="font-weight:700;text-align:right">${risk}</td>
+              <td style="color:#888;padding:2px 0">Urban proximity risk</td>
+              <td style="font-weight:700;text-align:right">${riskLabel}</td>
             </tr>
             <tr>
-              <td style="color:#888;padding:2px 0">Distance to urban</td>
-              <td style="font-weight:700;text-align:right">${dist}</td>
+              <td style="color:#888;padding:2px 0">NEAR_DIST value</td>
+              <td style="font-weight:700;text-align:right">${nearFmt}</td>
             </tr>
           </table>
         </div>
-      `, { maxWidth: 265 });
+      `, { maxWidth: 280 });
 
+      layer.on('click', function() {
+        console.log(`[threats.js] Urban-risk clicked: ${name} | NEAR_DIST=${nearDist} | category="${riskLabel}"`);
+      });
       layer.on('mouseover', function() {
-        this.setStyle({ fillOpacity: 0.95, weight: 2 });
+        this.setStyle({ fillOpacity: 0.92, color: '#1F2937', weight: 2 });
         this.bringToFront();
       });
       layer.on('mouseout', function() {
@@ -740,7 +849,16 @@ function _thApplyUrbanRisk() {
   });
 
   _thUrbanRiskLayer.addTo(_thMap);
-  _thUrbanRiskLayer.once('load', () => console.log('[threats.js] Threats layer loaded: Urban proximity risk'));
+  _thUrbanRiskLayer.once('load', () => {
+    console.log('[threats.js] Threats layer loaded: Urban proximity risk');
+    // Log a sample of properties from the first few features to confirm field names
+    let sampleCount = 0;
+    _thUrbanRiskLayer.eachFeature(lyr => {
+      if (sampleCount++ < 2) {
+        console.log('[threats.js] Urban-risk sample properties:', lyr.feature?.properties);
+      }
+    });
+  });
   _thUrbanRiskLayer.on('requesterror', (e) => console.error('[threats.js] Threats layer failed: Urban proximity risk —', e));
   _thShowLegend('urbanrisk');
 }
@@ -828,6 +946,15 @@ function initThreatsPanel() {
     console.warn('[threats.js] Map not ready — initThreatsPanel deferred');
     return;
   }
+
+  // Dedicated Leaflet pane for FeatureServer polygon layers.
+  // z=460 matches the GL canvas so threats layer z-ordering is consistent.
+  if (!_thMap.getPane('threatsPane')) {
+    const pane = _thMap.createPane('threatsPane');
+    pane.style.zIndex = 460;
+    pane.style.pointerEvents = 'none';
+  }
+
   _thInitGlMap();   // create the VT GL canvas
   _thInitialized = true;
   console.log('[threats.js] initThreatsPanel complete');
@@ -885,6 +1012,115 @@ function cleanupThreatsPanel() {
   _thHideLegend();
   _thRestoreBasemap();  // restore hillshade if it was hidden
 }
+
+// ============================================================
+// DEBUG HELPER — window.debugThreatLayer(category, year)
+// Call from the browser console to diagnose layer loading issues.
+// Examples:
+//   debugThreatLayer('landcover', '2020')
+//   debugThreatLayer('agriculture', '1986')
+//   debugThreatLayer('agexpansion')
+//   debugThreatLayer('urbanrisk')
+//   debugThreatLayer('totalchange')
+// ============================================================
+
+window.debugThreatLayer = async function(category, year) {
+  const yr  = String(year || _thYear || '2024');
+  const cat = String(category || 'landcover');
+
+  // Resolve the URL for this category/year
+  let url = null;
+  if (cat === 'landcover') {
+    url = _thLandcoverUrlForYear(yr);
+  } else if (cat === 'totalchange') {
+    url = TOTAL_LANDCOVER_CHANGE_URL;
+  } else if (cat === 'agexpansion') {
+    url = AGRICULTURE_EXPANSION_PARAMOS_URL;
+    console.group(`[debugThreatLayer] agexpansion (FeatureServer)`);
+    console.log('  FeatureServer URL:', url);
+    console.log('  Field used:        VALUE_12 (aliased as VALUE_1 in ArcGIS Pro)');
+    console.log('  Break thresholds:');
+    TH_AG_EXP_BREAKS.forEach((b, i) =>
+      console.log(`    Class ${i + 1}: ${b.min.toLocaleString()} – ${b.max === Infinity ? '∞' : b.max.toLocaleString()} m²  → ${b.color}  (${b.label})`)
+    );
+    console.log('  Loading layer on map now…');
+    console.groupEnd();
+    _thApplyAgExpansion();
+    return;
+  } else if (cat === 'urbanrisk') {
+    url = URBAN_RISK_PARAMOS_URL;
+    console.group(`[debugThreatLayer] urbanrisk (FeatureServer)`);
+    console.log('  FeatureServer URL:', url);
+    console.log('  Field used:        NEAR_DIST (lower = closer to urban = higher risk)');
+    console.log('  Break thresholds:');
+    console.log('    NEAR_DIST ≤ 0.018561  → Very high risk  (#B10026)');
+    console.log('    0.018562 – 0.046734   → High risk       (#D95F0E)');
+    console.log('    0.046735 – 0.082391   → Moderate risk   (#FE9929)');
+    console.log('    0.082392 – 0.554609   → Low risk        (#FEC44F)');
+    console.log('    > 0.554609            → Very low risk   (#FFF7BC)');
+    console.log('  Loading layer on map now…');
+    console.groupEnd();
+    _thApplyUrbanRisk();
+    return;
+  } else if (TH_CATEGORIES[cat]) {
+    url = TH_CATEGORIES[cat].urls[yr];
+  }
+
+  if (!url) {
+    console.error(`[debugThreatLayer] No URL for category="${cat}" year="${yr}"`);
+    return;
+  }
+
+  const base     = url.replace(/\/+$/, '');
+  const styleUrl = `${base}/resources/styles/root.json`;
+  const tileUrl  = `${base}/tile/{z}/{y}/{x}.pbf`;
+
+  console.group(`[debugThreatLayer] ${cat} / ${yr}`);
+  console.log('  Service URL:       ', url);
+  console.log('  Style JSON URL:    ', styleUrl);
+  console.log('  PBF tile pattern:  ', tileUrl);
+
+  // Check style JSON
+  try {
+    const resp = await fetch(styleUrl);
+    if (!resp.ok) {
+      console.error('  ✗ Style JSON fetch failed:', resp.status, resp.statusText);
+    } else {
+      const json = await resp.json();
+      console.log('  ✓ Style JSON OK   — layers:', json.layers?.length ?? 0,
+                  ' sources:', Object.keys(json.sources || {}).length);
+      const bgLayers = (json.layers || []).filter(l => l.type === 'background');
+      if (bgLayers.length) {
+        console.warn('  ⚠ Background layers found (will be made transparent by _thFetchStyle):',
+                     bgLayers.map(l => l.id));
+      }
+    }
+  } catch (e) {
+    console.error('  ✗ Style JSON fetch error:', e.message);
+  }
+
+  // Fit map to Colombia bbox
+  if (_thMap) {
+    console.log('  Fitting map to Colombia…');
+    _thMap.fitBounds([[-4.5, -82], [13, -66.5]]);
+  }
+
+  // Load the layer
+  console.log('  Loading layer on map now…');
+  console.groupEnd();
+
+  if (!_thInitialized) initThreatsPanel();
+  if (cat === 'landcover') {
+    _thClearOverlays();
+    _thLoadVtLayer(url, `debug: ${cat} ${yr}`);
+  } else if (cat === 'totalchange') {
+    _thClearOverlays();
+    _thLoadVtLayer(url, `debug: totalchange`);
+  } else {
+    _thClearOverlays();
+    _thLoadVtLayer(url, `debug: ${cat} ${yr}`);
+  }
+};
 
 // ============================================================
 // EXPOSE
