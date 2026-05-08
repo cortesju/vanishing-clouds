@@ -224,6 +224,14 @@ let activeSpeciesTheme = 'points';
 // (named _mapActivePanel to avoid collision with main.js's own activePanel variable)
 let _mapActivePanel = 'overview';
 
+// Pan/zoom suppressor — set true while the map is moving so expensive
+// per-feature hover effects (setStyle, bringToFront, icon swaps) are skipped.
+// Eliminates the stutter that occurs when many features try to re-style
+// while tiles are still loading and the viewport is actively changing.
+let _mapMoving = false;
+// Expose so other modules (threats.js, build-paramo.js) can guard their hover handlers
+Object.defineProperty(window, '_mapMoving', { get: () => _mapMoving });
+
 // GBIF points runtime state
 let gbifHeatLayer         = null;   // L.heatLayer instance (zoom-out view)
 let _gbifKingdomFilter    = null;   // "Animalia" | "Plantae" | null
@@ -292,14 +300,18 @@ function initMap() {
     const mapEl = document.getElementById('map-main');
     let timer   = null;
 
-    map.on('zoomstart', () => {
+    map.on('zoomstart movestart', () => {
       clearTimeout(timer);
       mapEl.classList.add('map-zooming');
+      _mapMoving = true;   // suppress expensive per-feature hover effects
     });
 
-    map.on('zoomend', () => {
+    map.on('zoomend moveend', () => {
       clearTimeout(timer);
-      timer = setTimeout(() => mapEl.classList.remove('map-zooming'), 200);
+      timer = setTimeout(() => {
+        mapEl.classList.remove('map-zooming');
+        _mapMoving = false;   // re-enable hover effects once settled
+      }, 200);
     });
   })();
 
@@ -614,42 +626,116 @@ function updateDetailLayerVisibility() {
 // DATA LOADING
 // ============================================================
 
-async function loadAllData() {
-  // ── Páramo layers load live from ArcGIS FeatureServer — completely independent
-  // of the local GeoJSON files below. Build and show them immediately so a failure
-  // in the local data fetch can never take them down.
+function loadAllData() {
+  // ── Critical path: only what the home (overview) panel needs ──────────────
+  // Everything else is lazy — built on first visit to each panel via
+  // _ensurePanelLayers().  Deferring the four GeoJSON fetches and the
+  // ArcGIS FeatureServer calls for species/urgency shaves several seconds off
+  // initial page load and keeps the home tab snappy.
+  console.time('[perf] home:paramo-layers');
   buildParamoFill();
   buildParamoOutline();
-  buildSpeciesHexLayer();    // aggregated hex — independent of local GeoJSON
-  buildGbifPointsLayer();    // GBIF occurrence points — managed by theme switcher
   applyPanelLayers('overview');
+  console.timeEnd('[perf] home:paramo-layers');
+}
 
-  // ── Local GeoJSON data (species, land cover, fire, urgency) ──
-  // Wrapped in its own try/catch so errors here never affect the páramo layer.
-  try {
-    const [speciesRes, landRes, fireRes, urgencyRes] = await Promise.all([
-      fetch('data/species_occurrences.geojson'),
-      fetch('data/land_cover_change.geojson'),
-      fetch('data/fire_alerts.geojson'),
-      fetch('data/urgency_index.geojson'),
-    ]);
+// ── Lazy-load tracking ──────────────────────────────────────────────────────
+// Tracks which panels have already had their heavy layers built.
+// 'overview' is pre-built in loadAllData(); all others start false.
+const _panelLayersBuilt = { overview: true };
 
-    DATA.species   = await speciesRes.json();
-    DATA.landCover = await landRes.json();
-    DATA.fire      = await fireRes.json();
-    DATA.urgency   = await urgencyRes.json();
+// Build tab-specific layers for panelId the first time the panel is visited.
+// Marks the panel built immediately to prevent duplicate builds from rapid clicks.
+// Returns a resolved Promise so callers can always .then() regardless of caching.
+async function _ensurePanelLayers(panelId) {
+  if (_panelLayersBuilt[panelId]) return;
+  _panelLayersBuilt[panelId] = true;   // mark first — prevents double-build
 
-    buildSpeciesPoints('all');
-    buildThreatLayers();
-    buildUrgencyLayer();
+  switch (panelId) {
 
-  } catch (err) {
-    console.warn('[maps.js] Local data load failed (non-critical):', err.message);
+    case 'species': {
+      // Both layers come from ArcGIS FeatureServer — no GeoJSON fetch needed.
+      console.time('[perf] load:species-layers');
+      buildSpeciesHexLayer();
+      buildGbifPointsLayer();
+      console.timeEnd('[perf] load:species-layers');
+      break;
+    }
+
+    case 'timeline': {
+      // Local GeoJSON for the time-period circle markers.
+      console.time('[perf] load:timeline-geojson');
+      if (!DATA.species) {
+        try {
+          const r = await fetch('data/species_occurrences.geojson');
+          DATA.species = await r.json();
+        } catch (e) {
+          console.warn('[maps.js] Timeline GeoJSON failed:', e.message);
+        }
+      }
+      buildSpeciesPoints('all');
+      console.timeEnd('[perf] load:timeline-geojson');
+      break;
+    }
+
+    case 'urgency': {
+      // Local GeoJSON for the urgency hex grid.
+      console.time('[perf] load:urgency-geojson');
+      if (!DATA.urgency) {
+        try {
+          const r = await fetch('data/urgency_index.geojson');
+          DATA.urgency = await r.json();
+        } catch (e) {
+          console.warn('[maps.js] Urgency GeoJSON failed:', e.message);
+        }
+      }
+      buildUrgencyLayer();
+      console.timeEnd('[perf] load:urgency-geojson');
+      break;
+    }
+
+    case 'build': {
+      // Local GeoJSON for Build-a-Páramo layer toggles.
+      console.time('[perf] load:build-geojson');
+      const pending = [];
+      if (!DATA.landCover) pending.push(
+        fetch('data/land_cover_change.geojson').then(r => r.json()).then(d => { DATA.landCover = d; })
+      );
+      if (!DATA.fire) pending.push(
+        fetch('data/fire_alerts.geojson').then(r => r.json()).then(d => { DATA.fire = d; })
+      );
+      try { await Promise.all(pending); }
+      catch (e) { console.warn('[maps.js] Build-panel GeoJSON failed:', e.message); }
+      buildThreatLayers();
+      console.timeEnd('[perf] load:build-geojson');
+      break;
+    }
+
+    // 'threats' layers are managed entirely by threats.js (already lazy).
+    // 'about', 'overview' need no extra layers.
   }
 }
 
-// (buildAllLayers removed — páramo layers are built at the top of loadAllData,
-//  species/threat/urgency are built after their data files resolve)
+// Correct species-panel layer state after lazy build or on every panel visit.
+// applyPanelLayers alone is not enough: the active theme determines which layer
+// (speciesHexLayer vs gbifPointsLayer) should actually be on the map.
+function _applySpeciesThemeCorrection() {
+  if (typeof window.switchSpeciesTheme === 'function') {
+    window.switchSpeciesTheme(activeSpeciesTheme || 'richness');
+  } else {
+    // Minimal fallback — switchSpeciesTheme not yet defined
+    const theme = activeSpeciesTheme || 'richness';
+    if (theme === 'points') {
+      updateGbifLayersByZoom();
+    } else if (LG.speciesHexLayer) {
+      if (!map.hasLayer(LG.speciesHexLayer)) LG.speciesHexLayer.addTo(map);
+      LG.speciesHexLayer.setStyle(f => getSpeciesHexStyle(theme, f));
+    }
+  }
+  if (typeof window.renderSpeciesHexLegend === 'function') {
+    window.renderSpeciesHexLegend(activeSpeciesTheme || 'richness');
+  }
+}
 
 // ---- Field accessor: tries multiple names for the same concept ----
 // ArcGIS CopyFeatures may rename fields; this tries the most likely variants.
@@ -686,6 +772,7 @@ function buildParamoFill() {
       layer.bindTooltip(buildTooltipHTML(p), { sticky: true, direction: 'top', opacity: 1 });
       layer.bindPopup(buildParamoPopup(p), { maxWidth: 300 });
       layer.on('mouseover', function() {
+        if (_mapMoving) return;
         this.setStyle({ fillOpacity: 0.92, weight: 2.5 });
         this.bringToFront();
       });
@@ -792,6 +879,7 @@ function buildSpeciesHexLayer() {
       const p = feature.properties || {};
       layer.bindPopup(buildSpeciesHexPopup(p), { maxWidth: 260 });
       layer.on('mouseover', function() {
+        if (_mapMoving) return;
         this.setStyle({ fillOpacity: 0.95, weight: 2 });
         this.bringToFront();
       });
@@ -875,6 +963,7 @@ function buildGbifPointsLayer() {
       });
       // Highlight on hover by swapping to a larger, fully-opaque icon
       layer.on('mouseover', function() {
+        if (_mapMoving) return;
         const { fill, stroke } = GBIF_COLORS[gbifKingdomKey(feature.properties?.kingdom)];
         const pts = '11,5 8.5,0.5 3.5,0.5 1,5 3.5,9.5 8.5,9.5';
         this.setIcon(L.divIcon({
@@ -1113,7 +1202,7 @@ function buildThreatLayers() {
     onEachFeature(feature, layer) {
       const p = feature.properties;
       layer.bindPopup(`<div style="font-family:Inter,sans-serif;padding:8px 10px;font-size:12px"><strong style="color:#E65100">🌾 Agriculture</strong><br>Year: ${p.year}<br>Area: ${p.area_ha?.toLocaleString()} ha<br>Distance to páramo: ${p.paramo_proximity_km} km</div>`);
-      layer.on('mouseover', function() { this.setStyle({ fillOpacity: 0.85 }); });
+      layer.on('mouseover', function() { if (_mapMoving) return; this.setStyle({ fillOpacity: 0.85 }); });
       layer.on('mouseout',  function() { this.setStyle({ fillOpacity: 0.6 }); });
     },
   }).addTo(LG.agriculture);
@@ -1185,7 +1274,7 @@ function buildUrgencyLayer() {
           </table>
         </div>
       `, { maxWidth: 240 });
-      layer.on('mouseover', function() { this.setStyle({ fillOpacity: 0.92, weight: 2 }); this.bringToFront(); });
+      layer.on('mouseover', function() { if (_mapMoving) return; this.setStyle({ fillOpacity: 0.92, weight: 2 }); this.bringToFront(); });
       layer.on('mouseout',  function() { LG.urgencyHexagons.resetStyle(this); });
     },
   });
@@ -1256,7 +1345,7 @@ function buildParamoPopup(p) {
     <div style="position:relative;height:140px;margin-bottom:10px;border-radius:8px;
                 overflow:hidden;
                 background:linear-gradient(135deg,#1B5E3B 0%,#2E7D52 55%,#C8A840 100%);">
-      ${imgUrl ? `<img src="${imgUrl}" alt="${name}"
+      ${imgUrl ? `<img src="${imgUrl}" alt="${name}" loading="lazy"
            style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;"
            onerror="this.style.display='none'">` : ''}
     </div>`;
@@ -1444,7 +1533,18 @@ window.onPanelChange = function(panelId) {
   }
   _mapActivePanel = panelId;
 
+  // Apply whatever layers are already built (null layers are skipped gracefully).
   applyPanelLayers(panelId);
+
+  // Lazy-build this panel's heavy layers if visiting for the first time.
+  // On completion, re-apply layers and fix any theme state corrections.
+  _ensurePanelLayers(panelId).then(() => {
+    if (_mapActivePanel !== panelId) return;   // user navigated away — discard
+    applyPanelLayers(panelId);
+    if (panelId === 'species') _applySpeciesThemeCorrection();
+  });
+
+  // ── Special-case per-panel side-effects ───────────────────────────────────
 
   // Build a Páramo: fly to wider regional view so users see the equatorial context
   // (Colombia, Ecuador, Venezuela, Peru) and why páramos are geographically rare.
@@ -1465,28 +1565,9 @@ window.onPanelChange = function(panelId) {
     else window.TP.hide();
   }
 
-  // Restore species panel layer state based on the last active theme.
-  // applyPanelLayers always adds speciesHexLayer (the panel default), so we need
-  // to correct it when the user had previously switched to the points view.
-  if (panelId === 'species') {
-    const theme = activeSpeciesTheme || 'richness';
-    if (theme === 'points') {
-      // Remove hex layer (applyPanelLayers may have added it as default)
-      if (LG.speciesHexLayer && map.hasLayer(LG.speciesHexLayer)) {
-        map.removeLayer(LG.speciesHexLayer);
-      }
-      // Zoom-based switch: heat at low zoom, points at high zoom
-      updateGbifLayersByZoom();
-    } else {
-      // Make sure both GBIF layers are off
-      if (LG.gbifPointsLayer && map.hasLayer(LG.gbifPointsLayer)) {
-        map.removeLayer(LG.gbifPointsLayer);
-      }
-      if (gbifHeatLayer && map.hasLayer(gbifHeatLayer)) {
-        map.removeLayer(gbifHeatLayer);
-      }
-    }
-  }
+  // Species panel: correct layer visibility for the active theme.
+  // _ensurePanelLayers().then() also calls this after lazy build completes.
+  if (panelId === 'species') _applySpeciesThemeCorrection();
 
   // Threats panel: wiring is handled by threats.js via main.js afterPanelRender
 };

@@ -379,6 +379,8 @@ async function _thFetchStyle(url) {
 // The container opacity fades out → load → fade in for a smooth transition.
 
 async function _thLoadVtLayer(url, label) {
+  const _perfKey = `[perf] load:threats:${label}`;
+  console.time(_perfKey);
   console.log(`[threats.js] Loading Threats layer: ${label}`);
 
   if (!_thGlMap || !_thGlContainer) {
@@ -427,6 +429,7 @@ async function _thLoadVtLayer(url, label) {
         fadeInDone = true;
         _thGlMap.resize();   // re-confirm dimensions after style swap
         _thGlContainer.style.opacity = '0.9';
+        console.timeEnd(_perfKey);
         console.log(`[threats.js] Threats layer loaded: ${label}`);
       }
     });
@@ -738,6 +741,7 @@ function _thApplyAgExpansion() {
   _thClearOverlays();
   _thRestoreBasemap();
 
+  console.time('[perf] load:threats:Ag expansion by páramo');
   console.log('[threats.js] Loading Threats layer: Agriculture expansion by páramo');
   console.log('[threats.js] Ag-expansion field: VALUE_12 (service alias: VALUE_1)');
 
@@ -801,6 +805,7 @@ function _thApplyAgExpansion() {
         console.log(`[threats.js] Ag-expansion clicked: ${name} | VALUE_12=${rawVal} | category="${catLabel}"`);
       });
       layer.on('mouseover', function() {
+        if (window._mapMoving) return;
         this.setStyle({ fillOpacity: 0.92, color: '#1F2937', weight: 2 });
         this.bringToFront();
       });
@@ -811,7 +816,10 @@ function _thApplyAgExpansion() {
   });
 
   _thAgExpLayer.addTo(_thMap);
-  _thAgExpLayer.once('load', () => console.log('[threats.js] Threats layer loaded: Agriculture expansion'));
+  _thAgExpLayer.once('load', () => {
+    console.timeEnd('[perf] load:threats:Ag expansion by páramo');
+    console.log('[threats.js] Threats layer loaded: Agriculture expansion');
+  });
   _thAgExpLayer.on('requesterror', (e) => console.error('[threats.js] Threats layer failed: Agriculture expansion —', e));
   _thShowLegend('agexpansion');
 }
@@ -837,6 +845,7 @@ function _thApplyUrbanRisk() {
   _thClearOverlays();
   _thRestoreBasemap();
 
+  console.time('[perf] load:threats:Urban risk by páramo');
   console.log('[threats.js] Loading Threats layer: Urban proximity risk by páramo');
   console.log('[threats.js] Urban-risk field: NEAR_DIST (lower = closer to urban = higher risk)');
 
@@ -896,6 +905,7 @@ function _thApplyUrbanRisk() {
         console.log(`[threats.js] Urban-risk clicked: ${name} | NEAR_DIST=${nearDist} | category="${riskLabel}"`);
       });
       layer.on('mouseover', function() {
+        if (window._mapMoving) return;
         this.setStyle({ fillOpacity: 0.92, color: '#1F2937', weight: 2 });
         this.bringToFront();
       });
@@ -907,6 +917,7 @@ function _thApplyUrbanRisk() {
 
   _thUrbanRiskLayer.addTo(_thMap);
   _thUrbanRiskLayer.once('load', () => {
+    console.timeEnd('[perf] load:threats:Urban risk by páramo');
     console.log('[threats.js] Threats layer loaded: Urban proximity risk');
     // Log a sample of properties from the first few features to confirm field names
     let sampleCount = 0;
