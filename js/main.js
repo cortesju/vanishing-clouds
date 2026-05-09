@@ -273,22 +273,61 @@ const PANEL_TEMPLATES = {
     <div class="panel-section urgency-panel">
       <span class="panel-eyebrow">CONSERVATION</span>
       <h2 class="panel-title">Where Protection Matters Most</h2>
-      <p class="panel-lead">A composite urgency score combining endemic richness, habitat loss, and threat pressure — mapped directly onto official páramo complex boundaries.</p>
-      <p class="urgency-boundary-note" style="font-size:0.78rem;color:var(--text-medium);background:rgba(27,94,59,0.06);border-radius:6px;padding:0.5rem 0.75rem;margin-bottom:0.5rem;">Urgency scores are displayed using official páramo complex boundaries. Colors represent relative conservation urgency within each páramo, not areas outside the ecosystem boundary.</p>
-      <p class="panel-note" style="font-size:0.78rem;color:var(--text-medium);background:rgba(196,139,30,0.08);border-radius:6px;padding:0.5rem 0.75rem;margin-bottom:0.75rem;">Note: This section is still a work in progress. Urgency results are being refined and should be interpreted as a preliminary visualization.</p>
+      <p class="panel-lead">A prototype conservation urgency dashboard for Colombia's páramo complexes.</p>
+
+      <!-- Prototype banner -->
+      <div class="urgency-proto-banner">
+        <span class="urgency-proto-icon">🔬</span>
+        <div>
+          <strong>Prototype dashboard</strong>
+          <p>Scores are provisional and demonstrate how final biodiversity, threat, and habitat indicators will be combined into a conservation urgency index. Do not use for policy decisions.</p>
+        </div>
+      </div>
+
+      <!-- Legend -->
       <div class="urgency-legend-panel">
-        <div class="legend-item"><span class="legend-color" style="background:#F4F1C2;border:1px solid #d0ceaa"></span> Very Low (1–2)</div>
-        <div class="legend-item"><span class="legend-color" style="background:#CFE8B8"></span> Low (2–3)</div>
-        <div class="legend-item"><span class="legend-color" style="background:#79C7B5"></span> Moderate (3–4)</div>
-        <div class="legend-item"><span class="legend-color" style="background:#E6A15D"></span> High (4–4.7)</div>
-        <div class="legend-item"><span class="legend-color" style="background:#C94A38"></span> Very High (4.8–5)</div>
-        <div class="legend-item"><span class="legend-color" style="background:#C8C8C0;opacity:0.5"></span> No data</div>
+        <div class="legend-item"><span class="legend-color" style="background:#F4F1C2;border:1px solid #d0ceaa"></span>Very Low (1–2)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#CFE8B8"></span>Low (2–3)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#79C7B5"></span>Moderate (3–4)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#E6A15D"></span>High (4–4.7)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#C94A38"></span>Very High (4.8–5)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#D8D8D8"></span>No data</div>
       </div>
-      <div class="chart-wrapper">
-        <canvas id="urgency-donut"></canvas>
+
+      <div class="panel-divider"></div>
+
+      <!-- Chart 1: Category distribution -->
+      <div class="urgency-chart-card">
+        <h4 class="urgency-chart-title">Category Distribution <span class="urgency-proto-tag">prototype</span></h4>
+        <p class="urgency-chart-sub">Number of categorized páramo complexes per urgency level</p>
+        <div style="height:130px;position:relative">
+          <canvas id="urgency-category-chart"></canvas>
+        </div>
       </div>
+
+      <!-- Chart 2: Top 5 highest urgency -->
+      <div class="urgency-chart-card">
+        <h4 class="urgency-chart-title">Top 5 Highest Urgency <span class="urgency-proto-tag">prototype</span></h4>
+        <p class="urgency-chart-sub">Páramo complexes by provisional urgency score</p>
+        <div style="height:160px;position:relative">
+          <canvas id="urgency-top5-chart"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 3: Threat breakdown -->
+      <div class="urgency-chart-card">
+        <h4 class="urgency-chart-title">Dominant Threat Breakdown <span class="urgency-proto-tag">prototype</span></h4>
+        <p class="urgency-chart-sub">Estimated share of dominant threat across categorized páramos</p>
+        <div style="height:180px;position:relative">
+          <canvas id="urgency-threat-donut"></canvas>
+        </div>
+      </div>
+
+      <div class="panel-divider"></div>
+
+      <!-- Risk profiles -->
       <div class="risk-profiles">
-        <h4>Highest Risk Complexes</h4>
+        <h4>Highest Risk Complexes <span class="urgency-proto-tag">prototype</span></h4>
         <div class="risk-card">
           <div class="risk-badge very-high">VERY HIGH</div>
           <h5>Santurbán</h5>
@@ -298,14 +337,14 @@ const PANEL_TEMPLATES = {
         <div class="risk-card">
           <div class="risk-badge high">HIGH</div>
           <h5>Sumapaz</h5>
-          <p>The world's largest páramo faces intense urban pressure from Bogotá's expanding metropolitan area.</p>
-          <div class="risk-threats"><span>🏙️ Urban</span><span>🌾 Agriculture</span></div>
+          <p>The world's largest páramo faces intense fire pressure and urban expansion from Bogotá's metropolitan area.</p>
+          <div class="risk-threats"><span>🔥 Fire</span><span>🏙️ Urban</span></div>
         </div>
         <div class="risk-card">
           <div class="risk-badge high">HIGH</div>
           <h5>Sierra Nevada de Santa Marta</h5>
-          <p>Isolated massif with no climate connectivity corridors facing rising agricultural and tourism pressure.</p>
-          <div class="risk-threats"><span>🌡️ Climate</span><span>🌾 Agriculture</span></div>
+          <p>An isolated massif with exceptional endemic richness facing rising agricultural pressure and no climate corridors.</p>
+          <div class="risk-threats"><span>🌾 Agriculture</span><span>🌡️ Climate</span></div>
         </div>
       </div>
     </div>
@@ -606,10 +645,12 @@ function afterPanelRender(panelId) {
   }
 
   if (panelId === 'urgency') {
-    // Re-init donut chart
-    if (typeof window.initUrgencyDonut === 'function') {
-      setTimeout(() => window.initUrgencyDonut(), 50);
-    }
+    // Init all 3 prototype dashboard charts
+    setTimeout(() => {
+      if (typeof window.initUrgencyCategoryChart === 'function') window.initUrgencyCategoryChart();
+      if (typeof window.initUrgencyTop5Chart     === 'function') window.initUrgencyTop5Chart();
+      if (typeof window.initUrgencyThreatDonut   === 'function') window.initUrgencyThreatDonut();
+    }, 60);
   }
 
   if (panelId === 'build') {

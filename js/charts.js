@@ -12,8 +12,10 @@ function applyChartDefaults() {
 }
 
 // ---- CHART INSTANCES ----
-let recordsChart = null;
-let urgencyDonut = null;
+let recordsChart        = null;
+let urgencyCategoryChart = null;
+let urgencyTop5Chart    = null;
+let urgencyThreatDonut  = null;
 
 // ---- RECORDS BY DECADE DATA ----
 const RECORDS_BY_DECADE = {
@@ -36,12 +38,28 @@ const RECORDS_BY_DECADE = {
   ],
 };
 
-// ---- URGENCY DISTRIBUTION DATA ----
-const URGENCY_DISTRIBUTION = {
-  labels: ['Very Low', 'Low', 'Moderate', 'High', 'Very High'],
-  data: [8, 15, 22, 35, 20],
-  colors: ['#FFFFCC', '#C7E9B4', '#7FCDBB', '#F4A261', '#C0392B'],
-  borderColors: ['#C8C860', '#8FC87A', '#4AABAA', '#D07030', '#922B21'],
+// ---- URGENCY DASHBOARD DATA (provisional / illustrative) ----
+// Category distribution: Low=3, Moderate=10, High=7, Very High=1
+const URGENCY_CATEGORY_DATA = {
+  labels: ['Low', 'Moderate', 'High', 'Very High'],
+  data:   [3, 10, 7, 1],
+  colors: ['#CFE8B8', '#79C7B5', '#E6A15D', '#C94A38'],
+  borderColors: ['#9FC890', '#4AABAA', '#C07030', '#A03020'],
+};
+
+// Top-5 páramos by prototype urgency score
+const URGENCY_TOP5_DATA = {
+  labels: ['Santurbán', 'Rabanal', 'Sierra Nevada', 'Sumapaz', 'Chingaza'],
+  data:   [4.9, 4.6, 4.5, 4.4, 4.3],
+  colors: ['#C94A38', '#E6A15D', '#E6A15D', '#E6A15D', '#E6A15D'],
+};
+
+// Dominant threat breakdown (illustrative percentages across categorized páramos)
+const URGENCY_THREAT_DATA = {
+  labels: ['Agriculture', 'Fire', 'Urban pressure', 'Mining', 'Climate'],
+  data:   [56, 14, 12, 10, 8],
+  colors: ['#79C7B5', '#E6A15D', '#C94A38', '#9B8060', '#B5C8A8'],
+  borderColors: ['#4AABAA', '#C07030', '#A03020', '#7A6040', '#8AAA80'],
 };
 
 // ============================================================
@@ -134,78 +152,143 @@ function initRecordsChart() {
 }
 
 // ============================================================
-// initUrgencyDonut
+// initUrgencyCategoryChart  — bar: number of páramos per category
 // ============================================================
-function initUrgencyDonut() {
-  const canvas = document.getElementById('urgency-donut');
-  if (!canvas || urgencyDonut) return;
-  if (typeof Chart === 'undefined') {
-    console.warn('[charts.js] Chart.js not loaded');
-    return;
-  }
+function initUrgencyCategoryChart() {
+  const canvas = document.getElementById('urgency-category-chart');
+  if (!canvas || urgencyCategoryChart) return;
+  if (typeof Chart === 'undefined') return;
 
-  const ctx = canvas.getContext('2d');
-
-  // Custom center text plugin
-  const centerTextPlugin = {
-    id: 'centerText',
-    afterDraw(chart) {
-      if (chart.config.type !== 'doughnut') return;
-      const { ctx: c, chartArea: { width, height, left, top } } = chart;
-      c.save();
-      const centerX = left + width / 2;
-      const centerY = top + height / 2;
-      c.textAlign = 'center';
-      c.textBaseline = 'middle';
-      c.font = "bold 22px 'Helvetica Neue', HelveticaNeue, Helvetica, Arial, sans-serif";
-      c.fillStyle = '#1A1A2E';
-      c.fillText('37', centerX, centerY - 10);
-      c.font = "12px "Helvetica Neue", HelveticaNeue, Helvetica, Arial, sans-serif";
-      c.fillStyle = '#4A4A6A';
-      c.fillText('Páramos', centerX, centerY + 12);
-      c.restore();
+  urgencyCategoryChart = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: URGENCY_CATEGORY_DATA.labels,
+      datasets: [{
+        label: 'Páramo complexes (prototype)',
+        data:  URGENCY_CATEGORY_DATA.data,
+        backgroundColor: URGENCY_CATEGORY_DATA.colors,
+        borderColor:     URGENCY_CATEGORY_DATA.borderColors,
+        borderWidth: 1,
+        borderRadius: 5,
+        borderSkipped: false,
+      }],
     },
-  };
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 700, easing: 'easeOutQuart' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1A1A2E',
+          titleColor: '#fff',
+          bodyColor: 'rgba(255,255,255,0.85)',
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: {
+            label: item => ` ${item.raw} páramo${item.raw !== 1 ? 's' : ''} (prototype)`,
+          },
+        },
+      },
+      scales: {
+        x: { grid: { display: false }, border: { display: false },
+             ticks: { font: { size: 11 }, color: '#7A8A8A' } },
+        y: { grid: { color: 'rgba(74,74,106,0.08)' }, border: { display: false },
+             ticks: { stepSize: 2, font: { size: 11 }, color: '#7A8A8A' },
+             beginAtZero: true },
+      },
+    },
+  });
+}
 
-  urgencyDonut = new Chart(ctx, {
+// ============================================================
+// initUrgencyTop5Chart  — horizontal bar: top-5 by prototype score
+// ============================================================
+function initUrgencyTop5Chart() {
+  const canvas = document.getElementById('urgency-top5-chart');
+  if (!canvas || urgencyTop5Chart) return;
+  if (typeof Chart === 'undefined') return;
+
+  urgencyTop5Chart = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: URGENCY_TOP5_DATA.labels,
+      datasets: [{
+        label: 'Prototype urgency score',
+        data:  URGENCY_TOP5_DATA.data,
+        backgroundColor: URGENCY_TOP5_DATA.colors,
+        borderColor:     URGENCY_TOP5_DATA.colors.map(c => c + 'CC'),
+        borderWidth: 1,
+        borderRadius: 4,
+        borderSkipped: false,
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 700, easing: 'easeOutQuart' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1A1A2E',
+          titleColor: '#fff',
+          bodyColor: 'rgba(255,255,255,0.85)',
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: {
+            label: item => ` Score: ${item.raw.toFixed(1)} / 5.0 (prototype)`,
+          },
+        },
+      },
+      scales: {
+        x: { min: 3.5, max: 5.0,
+             grid: { color: 'rgba(74,74,106,0.08)' }, border: { display: false },
+             ticks: { font: { size: 11 }, color: '#7A8A8A' } },
+        y: { grid: { display: false }, border: { display: false },
+             ticks: { font: { size: 11 }, color: '#4A5A5A' } },
+      },
+    },
+  });
+}
+
+// ============================================================
+// initUrgencyThreatDonut  — donut: dominant threat breakdown
+// ============================================================
+function initUrgencyThreatDonut() {
+  const canvas = document.getElementById('urgency-threat-donut');
+  if (!canvas || urgencyThreatDonut) return;
+  if (typeof Chart === 'undefined') return;
+
+  urgencyThreatDonut = new Chart(canvas.getContext('2d'), {
     type: 'doughnut',
     data: {
-      labels: URGENCY_DISTRIBUTION.labels,
+      labels: URGENCY_THREAT_DATA.labels,
       datasets: [{
-        data: URGENCY_DISTRIBUTION.data,
-        backgroundColor: URGENCY_DISTRIBUTION.colors,
-        borderColor: URGENCY_DISTRIBUTION.borderColors,
+        data:            URGENCY_THREAT_DATA.data,
+        backgroundColor: URGENCY_THREAT_DATA.colors,
+        borderColor:     URGENCY_THREAT_DATA.borderColors,
         borderWidth: 1.5,
         hoverOffset: 6,
       }],
     },
     options: {
       responsive: true,
-      maintainAspectRatio: true,
-      cutout: '65%',
-      animation: {
-        animateRotate: true,
-        duration: 900,
-        easing: 'easeOutQuart',
-      },
+      maintainAspectRatio: false,
+      cutout: '60%',
+      animation: { animateRotate: true, duration: 800, easing: 'easeOutQuart' },
       plugins: {
         legend: {
           position: 'right',
           labels: {
-            padding: 14,
-            font: { size: 12 },
-            usePointStyle: true,
-            pointStyleWidth: 12,
+            padding: 12, font: { size: 11 },
+            usePointStyle: true, pointStyleWidth: 10,
             generateLabels(chart) {
-              const data = chart.data;
-              return data.labels.map((label, i) => ({
-                text: `${label} (${data.datasets[0].data[i]}%)`,
-                fillStyle: data.datasets[0].backgroundColor[i],
-                strokeStyle: data.datasets[0].borderColor[i],
-                lineWidth: 1,
-                pointStyle: 'circle',
-                hidden: false,
-                index: i,
+              return chart.data.labels.map((label, i) => ({
+                text: `${label} ${chart.data.datasets[0].data[i]}%`,
+                fillStyle: chart.data.datasets[0].backgroundColor[i],
+                strokeStyle: chart.data.datasets[0].borderColor[i],
+                lineWidth: 1, pointStyle: 'circle', hidden: false, index: i,
               }));
             },
           },
@@ -213,27 +296,13 @@ function initUrgencyDonut() {
         tooltip: {
           backgroundColor: '#1A1A2E',
           titleColor: '#fff',
-          bodyColor: 'rgba(255,255,255,0.8)',
-          padding: 12,
+          bodyColor: 'rgba(255,255,255,0.85)',
+          padding: 10,
           cornerRadius: 8,
-          callbacks: {
-            label(item) {
-              const val = item.raw;
-              const descriptions = {
-                'Very Low': 'Minimal threat, good coverage',
-                'Low': 'Some pressure, adequate protection',
-                'Moderate': 'Moderate threats, partial protection',
-                'High': 'High threat, limited protection',
-                'Very High': 'Critical — immediate action needed',
-              };
-              const desc = descriptions[item.label] || '';
-              return [` ${val}% of páramo area`, ` ${desc}`];
-            },
-          },
+          callbacks: { label: item => ` ${item.raw}% of categorized páramos (prototype)` },
         },
       },
     },
-    plugins: [centerTextPlugin],
   });
 }
 
@@ -248,10 +317,20 @@ window.initRecordsChart = function() {
   initRecordsChart();
 };
 
-window.initUrgencyDonut = function() {
-  urgencyDonut = null; // reset
+window.initUrgencyCategoryChart = function() {
+  urgencyCategoryChart = null;
   applyChartDefaults();
-  initUrgencyDonut();
+  initUrgencyCategoryChart();
+};
+window.initUrgencyTop5Chart = function() {
+  urgencyTop5Chart = null;
+  applyChartDefaults();
+  initUrgencyTop5Chart();
+};
+window.initUrgencyThreatDonut = function() {
+  urgencyThreatDonut = null;
+  applyChartDefaults();
+  initUrgencyThreatDonut();
 };
 
 // ============================================================
@@ -278,8 +357,10 @@ function setupChartObserver() {
   applyChartDefaults();
 
   const CHART_INIT_MAP = {
-    'records-chart': initRecordsChart,
-    'urgency-donut': initUrgencyDonut,
+    'records-chart':          initRecordsChart,
+    'urgency-category-chart': initUrgencyCategoryChart,
+    'urgency-top5-chart':     initUrgencyTop5Chart,
+    'urgency-threat-donut':   initUrgencyThreatDonut,
   };
 
   const observer = new IntersectionObserver((entries) => {

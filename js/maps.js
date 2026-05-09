@@ -1600,91 +1600,136 @@ function buildThreatLayers() {
   });
 }
 
+// ---- Provisional urgency scores (prototype / illustrative) ----
+// These are approximate values used to demonstrate the dashboard design.
+// Final scores will be recalculated from completed threat, biodiversity,
+// and habitat layers. All values marked as provisional in the popup.
+const PROVISIONAL_URGENCY_DATA = [
+  { name: 'Santurbán',               score: 4.9, cls: 'Very High', agri: 3, urban: 2, fire: 1, bio: 5, concern: 'Mining (196 active concessions)',              threat: 'Mining'         },
+  { name: 'Rabanal',                  score: 4.6, cls: 'High',      agri: 4, urban: 3, fire: 2, bio: 3, concern: 'Mining and agricultural expansion',             threat: 'Mining'         },
+  { name: 'Sierra Nevada',            score: 4.5, cls: 'High',      agri: 4, urban: 2, fire: 3, bio: 5, concern: 'Agricultural encroachment into endemic habitat', threat: 'Agriculture'    },
+  { name: 'Sumapaz',                  score: 4.4, cls: 'High',      agri: 4, urban: 4, fire: 5, bio: 5, concern: 'Fire and urban expansion from Bogotá',           threat: 'Fire'           },
+  { name: 'Cruz Verde-Sumapaz',       score: 4.2, cls: 'High',      agri: 4, urban: 4, fire: 4, bio: 4, concern: 'Fire and peri-urban agricultural pressure',      threat: 'Fire'           },
+  { name: 'Chingaza',                 score: 4.3, cls: 'High',      agri: 3, urban: 4, fire: 2, bio: 4, concern: 'Urban proximity — Bogotá water supply at risk',  threat: 'Urban pressure' },
+  { name: 'Almorzadero',              score: 4.2, cls: 'High',      agri: 4, urban: 2, fire: 3, bio: 3, concern: 'Agricultural pressure on intact peat bogs',       threat: 'Agriculture'    },
+  { name: 'Los Nevados',              score: 4.1, cls: 'High',      agri: 3, urban: 2, fire: 3, bio: 4, concern: 'Glacial retreat (>85% since 1850) + agriculture', threat: 'Agriculture'    },
+  { name: 'Tota-Bijagual-Mamapacha',  score: 3.7, cls: 'Moderate',  agri: 3, urban: 3, fire: 3, bio: 3, concern: 'Mixed agricultural and urban pressure',           threat: 'Agriculture'    },
+  { name: 'Las Hermosas',             score: 3.6, cls: 'Moderate',  agri: 3, urban: 2, fire: 3, bio: 3, concern: 'Agricultural encroachment',                       threat: 'Agriculture'    },
+  { name: 'Cocuy',                    score: 3.5, cls: 'Moderate',  agri: 2, urban: 1, fire: 3, bio: 4, concern: 'Tourism pressure and glacial retreat',            threat: 'Climate'        },
+  { name: 'Nevado del Huila',         score: 3.4, cls: 'Moderate',  agri: 3, urban: 1, fire: 3, bio: 3, concern: 'Agricultural pressure and climate vulnerability', threat: 'Agriculture'    },
+  { name: 'Farallones de Cali',       score: 3.4, cls: 'Moderate',  agri: 3, urban: 3, fire: 3, bio: 3, concern: 'Urban-agricultural pressure near Cali',           threat: 'Agriculture'    },
+  { name: 'Guerrero',                 score: 3.3, cls: 'Moderate',  agri: 3, urban: 3, fire: 2, bio: 3, concern: 'Agricultural expansion and urban proximity',       threat: 'Agriculture'    },
+  { name: 'Pisba',                    score: 3.2, cls: 'Moderate',  agri: 3, urban: 1, fire: 3, bio: 3, concern: 'Agricultural pressure',                           threat: 'Agriculture'    },
+  { name: 'Chili-Barragán',           score: 3.2, cls: 'Moderate',  agri: 3, urban: 2, fire: 2, bio: 3, concern: 'Agricultural pressure',                           threat: 'Agriculture'    },
+  { name: 'Iguaque-Merchán',          score: 3.1, cls: 'Moderate',  agri: 3, urban: 2, fire: 2, bio: 3, concern: 'Agricultural encroachment',                       threat: 'Agriculture'    },
+  { name: 'Belmira',                  score: 3.0, cls: 'Moderate',  agri: 3, urban: 2, fire: 2, bio: 2, concern: 'Pasture expansion',                               threat: 'Agriculture'    },
+  { name: 'Frontino-Urrao',           score: 2.5, cls: 'Low',       agri: 2, urban: 1, fire: 2, bio: 3, concern: 'Agricultural pressure',                           threat: 'Agriculture'    },
+  { name: 'Sonsón',                   score: 2.3, cls: 'Low',       agri: 2, urban: 1, fire: 2, bio: 2, concern: 'Agricultural pressure',                           threat: 'Agriculture'    },
+  { name: 'Tatamá',                   score: 2.1, cls: 'Low',       agri: 2, urban: 1, fire: 1, bio: 3, concern: 'Agricultural pressure',                           threat: 'Agriculture'    },
+];
+
+// Build normalized lookup once (accent-stripped lowercase → data entry)
+const _provisionalLookup = Object.fromEntries(
+  PROVISIONAL_URGENCY_DATA.map(d => [_normalizeParamoName(d.name), d])
+);
+
+function _lookupProvisional(pacomplejo) {
+  if (!pacomplejo) return null;
+  const key = _normalizeParamoName(pacomplejo);
+  if (_provisionalLookup[key]) return _provisionalLookup[key];
+  // Try stripping common article prefix ("El", "La", "Los", "Las")
+  const noPrefix = key.replace(/^(el|la|los|las)\s+/, '');
+  if (_provisionalLookup[noPrefix]) return _provisionalLookup[noPrefix];
+  // Partial match — longest lookup key that is contained by key or vice versa
+  let best = null, bestLen = 0;
+  for (const [lk, val] of Object.entries(_provisionalLookup)) {
+    if ((key.includes(lk) || lk.includes(key)) && lk.length > bestLen) {
+      best = val; bestLen = lk.length;
+    }
+  }
+  return best;
+}
+
 // ---- Urgency páramo layer ----
-// Styles official páramo complex boundaries by urgency score.
-// Urgency data from urgency_index.geojson is aggregated (max score per
-// complex) and matched to FeatureServer polygons via normalized name lookup.
+// Styles official páramo complex boundaries by provisional urgency score.
+// Matches FeatureServer polygons via normalized name lookup.
 function buildUrgencyLayer() {
   if (LG.urgencyParamos) {
     if (map.hasLayer(LG.urgencyParamos)) map.removeLayer(LG.urgencyParamos);
     LG.urgencyParamos = null;
   }
 
-  // ── Build max-score lookup: normalizedName → { score, cls, richness, threat } ──
-  const urgencyByName = {};
-  (DATA.urgency?.features || []).forEach(f => {
-    const p = f.properties || {};
-    if (!p.paramo_name) return;
-    const key = _normalizeParamoName(p.paramo_name);
-    const existing = urgencyByName[key];
-    if (!existing || p.urgency_score > existing.score) {
-      urgencyByName[key] = {
-        score:   p.urgency_score,
-        cls:     p.urgency_class,
-        richness: p.endemic_richness_score,
-        threat:  p.dominant_threat,
-        rawName: p.paramo_name,
-      };
-    }
-  });
-
-  // Helper: look up urgency entry by pacomplejo name (tolerates accent/case diffs)
-  function _lookupUrgency(pacomplejo) {
-    return urgencyByName[_normalizeParamoName(pacomplejo)] || null;
+  // ── Small indicator bar helper (inline HTML, 0–5 scale) ──────────────────
+  function _indicatorBar(val, color) {
+    const pct = Math.round((val / 5) * 100);
+    return `<div style="display:flex;align-items:center;gap:6px;margin:2px 0">
+      <div style="flex:1;height:5px;background:#E8EAE4;border-radius:3px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:${color};border-radius:3px"></div>
+      </div>
+      <span style="font-size:10px;color:#666;width:14px;text-align:right">${val}/5</span>
+    </div>`;
   }
 
   LG.urgencyParamos = L.esri.featureLayer({
     url: PARAMO_FEATURE_URL,
     style(feature) {
-      const u = _lookupUrgency(feature.properties?.pacomplejo);
+      const u = _lookupProvisional(feature.properties?.pacomplejo);
       if (!u) {
-        // No urgency data — muted neutral
-        return { fillColor: URGENCY_COLORS.noData, color: 'rgba(255,255,255,0.6)', weight: 0.8, fillOpacity: 0.30 };
+        return { fillColor: URGENCY_COLORS.noData, color: 'rgba(255,255,255,0.6)', weight: 0.8, fillOpacity: 0.28 };
       }
-      return {
-        fillColor:   getUrgencyColor(u.score),
-        color:       'rgba(255,255,255,0.8)',
-        weight:      0.8,
-        fillOpacity: 0.62,
-      };
+      return { fillColor: getUrgencyColor(u.score), color: 'rgba(255,255,255,0.8)', weight: 0.8, fillOpacity: 0.62 };
     },
     onEachFeature(feature, layer) {
-      const p = feature.properties || {};
+      const p    = feature.properties || {};
       const name = p.pacomplejo || p.pacodigo || 'Páramo';
-      const u    = _lookupUrgency(p.pacomplejo);
+      const u    = _lookupProvisional(p.pacomplejo);
       const color = u ? getUrgencyColor(u.score) : URGENCY_COLORS.noData;
+      const isDark = u && color !== URGENCY_COLORS.veryLow && color !== URGENCY_COLORS.noData;
 
       // Tooltip
-      const tooltipHtml = u
-        ? `<div style="font-family:Inter,sans-serif;font-size:11px;padding:3px 6px">
-             <strong style="color:${color}">${u.cls}</strong><br>${name}
-           </div>`
-        : `<div style="font-family:Inter,sans-serif;font-size:11px;padding:3px 6px">
-             <strong style="color:#888">No data</strong><br>${name}
-           </div>`;
-      layer.bindTooltip(tooltipHtml, { sticky: true, direction: 'top', opacity: 1 });
+      layer.bindTooltip(
+        `<div style="font-family:Inter,sans-serif;font-size:11px;padding:3px 6px">
+           <strong style="color:${u ? color : '#999'}">${u ? u.cls : 'No data'} ${u ? '· prototype' : ''}</strong><br>${name}
+         </div>`,
+        { sticky: true, direction: 'top', opacity: 1 }
+      );
 
       // Popup
-      const scoreRow = u ? `<tr><td style="color:#888;padding:2px 0">Urgency score</td><td style="font-weight:600">${u.score.toFixed(2)}</td></tr>` : '';
-      const richRow  = u && u.richness != null ? `<tr><td style="color:#888;padding:2px 0">Endemic richness</td><td style="font-weight:600">${u.richness}/5</td></tr>` : '';
-      const threatRow= u && u.threat ? `<tr><td style="color:#888;padding:2px 0">Dominant threat</td><td style="font-weight:600">${u.threat}</td></tr>` : '';
-      const badge    = u
-        ? `<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;background:${color};color:${(color === URGENCY_COLORS.veryLow || color === URGENCY_COLORS.noData) ? '#555' : '#fff'}">${u.cls}</span>`
-        : `<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600;background:#e0e0dc;color:#777">No data</span>`;
+      const badge = u
+        ? `<span style="display:inline-block;padding:2px 9px;border-radius:999px;font-size:10px;font-weight:700;background:${color};color:${isDark ? '#fff' : '#555'}">${u.cls}</span>`
+        : `<span style="display:inline-block;padding:2px 9px;border-radius:999px;font-size:10px;font-weight:600;background:#e0e0dc;color:#777">No data</span>`;
+
+      const indicators = u ? `
+        <div style="margin-top:10px">
+          <p style="margin:0 0 4px;font-size:10px;font-weight:700;color:#888;letter-spacing:0.06em;text-transform:uppercase">Pressure indicators</p>
+          <p style="margin:0 0 2px;font-size:10px;color:#555">Agriculture</p>
+          ${_indicatorBar(u.agri,  '#79C7B5')}
+          <p style="margin:4px 0 2px;font-size:10px;color:#555">Urban proximity</p>
+          ${_indicatorBar(u.urban, '#E6A15D')}
+          <p style="margin:4px 0 2px;font-size:10px;color:#555">Fire frequency</p>
+          ${_indicatorBar(u.fire,  '#C94A38')}
+          <p style="margin:4px 0 2px;font-size:10px;color:#555">Biodiversity importance</p>
+          ${_indicatorBar(u.bio,   '#1B5E3B')}
+        </div>
+        <p style="margin:8px 0 4px;font-size:10px;color:#555"><strong style="color:#C8A840">Main concern:</strong> ${u.concern}</p>` : '';
+
+      const note = `<p style="margin:8px 0 0;font-size:9.5px;color:#AAA;font-style:italic;border-top:1px solid #eee;padding-top:6px">
+        ${u ? '⚠ Prototype value — pending final analysis' : 'No urgency data available for this complex'}
+      </p>`;
 
       layer.bindPopup(`
-        <div style="font-family:Inter,sans-serif;padding:10px 12px;min-width:200px;">
-          <h4 style="margin:0 0 6px;font-family:'Playfair Display',serif;font-size:14px;color:#1B5E3B">${name}</h4>
+        <div style="font-family:Inter,sans-serif;padding:10px 12px;min-width:220px;max-width:270px">
+          <h4 style="margin:0 0 5px;font-family:'Playfair Display',serif;font-size:14px;color:#1B5E3B">${name}</h4>
           ${badge}
-          <table style="width:100%;font-size:11px;margin-top:8px;border-collapse:collapse">
-            ${scoreRow}${richRow}${threatRow}
-          </table>
+          ${u ? `<p style="margin:5px 0 0;font-size:10px;color:#888">Prototype score: <strong style="color:#333">${u.score.toFixed(1)} / 5.0</strong></p>` : ''}
+          ${indicators}
+          ${note}
         </div>
-      `, { maxWidth: 260 });
+      `, { maxWidth: 285 });
 
       layer.on('mouseover', function() {
         if (_mapMoving) return;
-        this.setStyle({ color: '#1F2937', weight: 2, fillOpacity: u ? 0.80 : 0.45 });
+        this.setStyle({ color: '#1F2937', weight: 2, fillOpacity: u ? 0.80 : 0.40 });
         this.bringToFront();
       });
       layer.on('mouseout', function() { LG.urgencyParamos.resetStyle(this); });
