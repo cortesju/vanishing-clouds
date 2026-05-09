@@ -256,6 +256,9 @@ const PANEL_TEMPLATES = {
             <button id="th-fire-play-btn" class="th-play-btn">▶ Play</button>
           </div>
           <div class="th-fire-year-range">2012-2024</div>
+          <button id="th-fire-points-toggle" class="th-layer-toggle th-layer-toggle--on">
+            👁 Points visible
+          </button>
         </div>
       </div>
 

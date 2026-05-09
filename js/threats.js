@@ -334,6 +334,12 @@ let _thFireDensityLayer    = null;   // L.tileLayer — fire density kernel rast
 let _thFirePointsLayer    = null;   // L.geoJSON — fire points (direct query, filtered by year)
 let _thFireFreqLayer      = null;   // L.esri.featureLayer — fire frequency by páramo
 let _thFireParamoRefLayer = null;   // L.esri.featureLayer — páramo reference outline (all fire sub-modes)
+// Async race-condition guard: incremented by _thClearFireLayers + each new query.
+// _thShowFirePoints captures its value at start; if it changes before .addTo() the
+// callback is dropped, preventing bleed onto other panels.
+let _thFirePointsSeq  = 0;
+// User-controlled visibility toggle for the fire points layer (on/off button).
+let _thFirePointsVisible = true;
 
 // ============================================================
 // BASEMAP SIMPLIFICATION
@@ -574,6 +580,12 @@ function _thHideVtLayer() {
 // ============================================================
 
 function _thClearFireLayers() {
+  // Invalidate any in-flight _thShowFirePoints async call so its .addTo() is
+  // dropped even if the fetch completes after this cleanup runs.
+  _thFirePointsSeq++;
+  // Also reset visibility toggle so next visit starts with points on.
+  _thFirePointsVisible = true;
+
   // Stop any running animation
   if (_thFirePlayInterval) {
     clearInterval(_thFirePlayInterval);
@@ -1299,6 +1311,7 @@ function _thShowFireDensity() {
 
 async function _thShowFirePoints() {
   const yearKey = String(_thFireYear);
+  const seq     = ++_thFirePointsSeq;   // capture — if cleanup runs mid-await, seq will differ
   const perfKey = `[perf] load:threats:Fire points ${_thFireYear}`;
   console.time(perfKey);
   console.log(`[threats.js] Querying fire points for year ${_thFireYear}`);
@@ -1371,6 +1384,13 @@ async function _thShowFirePoints() {
     iconAnchor: [4, 4],
   });
 
+  // Guard: if cleanup ran (tab switch) while we were awaiting, discard silently.
+  if (_thFirePointsSeq !== seq) {
+    console.log(`[threats.js] Fire points seq mismatch — discarding stale result for year ${_thFireYear}`);
+    console.timeEnd(perfKey);
+    return;
+  }
+
   // Render as L.geoJSON — no server symbology, pure client-side rendering
   _thFirePointsLayer = L.geoJSON(geojson, {
     pane: 'threatsPane',
@@ -1410,7 +1430,9 @@ async function _thShowFirePoints() {
         </div>
       `, { maxWidth: 240 });
     },
-  }).addTo(_thMap);
+  });
+  // Only add to map if the user hasn't toggled points off
+  if (_thFirePointsVisible) _thFirePointsLayer.addTo(_thMap);
 
   // Fade the threats pane back in now that the new layer is in place
   if (_tp) {
@@ -1634,6 +1656,14 @@ function _updateThreatsUI() {
   const fireYearSlider = document.getElementById('th-fire-year-slider');
   if (fireYearLabel)  fireYearLabel.textContent = _thFireYear;
   if (fireYearSlider) fireYearSlider.value       = _thFireYear;
+
+  // Fire points toggle button — reflect current visibility state
+  const ptToggle = document.getElementById('th-fire-points-toggle');
+  if (ptToggle) {
+    ptToggle.textContent = _thFirePointsVisible ? '👁 Points visible' : '🚫 Points hidden';
+    ptToggle.classList.toggle('th-layer-toggle--on',  _thFirePointsVisible);
+    ptToggle.classList.toggle('th-layer-toggle--off', !_thFirePointsVisible);
+  }
 }
 
 // ============================================================
@@ -1850,6 +1880,22 @@ function wireThreatsPanel() {
           }
         }, 1800);
       }
+    });
+  }
+
+  // ── Fire points visibility toggle ──
+  const ptToggle = document.getElementById('th-fire-points-toggle');
+  if (ptToggle) {
+    ptToggle.addEventListener('click', () => {
+      _thFirePointsVisible = !_thFirePointsVisible;
+      if (_thFirePointsLayer && _thMap) {
+        if (_thFirePointsVisible) {
+          _thFirePointsLayer.addTo(_thMap);
+        } else {
+          _thMap.removeLayer(_thFirePointsLayer);
+        }
+      }
+      _updateThreatsUI();   // syncs button label + classes
     });
   }
 

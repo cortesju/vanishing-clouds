@@ -3930,6 +3930,33 @@ body.terrain-active .leaflet-control-scale {
   letter-spacing: 0.04em;
 }
 
+/* Fire points on/off toggle button */
+.th-layer-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.45rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.th-layer-toggle--on {
+  border: 1.5px solid rgba(27, 94, 59, 0.40);
+  background: rgba(27, 94, 59, 0.08);
+  color: var(--accent-green);
+}
+.th-layer-toggle--on:hover  { background: rgba(27, 94, 59, 0.16); }
+.th-layer-toggle--off {
+  border: 1.5px solid rgba(150, 100, 60, 0.35);
+  background: rgba(150, 100, 60, 0.07);
+  color: var(--text-medium);
+}
+.th-layer-toggle--off:hover { background: rgba(150, 100, 60, 0.14); }
+
 /* Circle swatch for fire points legend */
 .th-swatch--circle {
   border-radius: 50%;
