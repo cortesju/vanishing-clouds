@@ -184,9 +184,48 @@ function syncAllGL() {
   });
 }
 
+// ── 360° Field Views ───────────────────────────────────────────────────────
+// Curated Google Earth ground-level panoramas of páramo landscapes.
+// Markers are shown only on the Overview/Páramos tab (PANEL_LAYERS.overview).
+const PARAMO_360_VIEWS = [
+  {
+    name:  'Sumapaz',
+    label: '360° Field View · Sumapaz',
+    desc:  'The world\'s largest continuous páramo complex, spanning 333,000 ha south of Bogotá. Home to frailejones, spectacled bears, and the headwaters of four major river systems.',
+    lat:   3.80627697,
+    lng:   -74.23423282,
+    url:   'https://earth.app.goo.gl/?apn=com.google.earth&isi=293622097&ius=googleearth&link=https%3a%2f%2fearth.google.com%2fweb%2f%403.80627697,-74.23423282,3698.64913957a,0d,60y,162.05114115h,84.51730587t,0r%2fdata%3dCgRCAggBIhsKF0NJSE0wb2dLRUlDQWdJQ3Y2SXpPMWdFEAU6AwoBMEICCABKDQj___________8BEAA',
+  },
+  {
+    name:  'Chingaza',
+    label: '360° Field View · Chingaza',
+    desc:  'A national park and key water source for Bogotá, Chingaza sits at 3,200–4,020 m. Its cloud forest and páramo host the endangered mountain tapir and over 300 bird species.',
+    lat:   4.58771184,
+    lng:   -73.72434231,
+    url:   'https://earth.app.goo.gl/?apn=com.google.earth&isi=293622097&ius=googleearth&link=https%3a%2f%2fearth.google.com%2fweb%2f%404.58771184,-73.72434231,3336.94841914a,0d,60y,273.89729042h,83.55011854t,0r%2fdata%3dCgRCAggBIhsKF0NJSE0wb2dLRUlDQWdJREV6UDIwdVFFEAU6AwoBMEICCABKDQj___________8BEAA',
+  },
+  {
+    name:  'Los Nevados',
+    label: '360° Field View · Los Nevados',
+    desc:  'A volcanic páramo in the Central Cordillera reaching 5,321 m at Nevado del Ruiz. Glaciers here have retreated over 85% since 1850 — one of Colombia\'s most visible climate signals.',
+    lat:   3.94266507,
+    lng:   -74.10229399,
+    url:   'https://earth.app.goo.gl/?apn=com.google.earth&isi=293622097&ius=googleearth&link=https%3a%2f%2fearth.google.com%2fweb%2f%403.94266507,-74.10229399,3753.1437403a,0d,60y,273.50889126h,85.38192584t,0r%2fdata%3dCgRCAggBIhsKF0NJSE0wb2dLRUlDQWdJQzRndk9VM2dFEAU6AwoBMEICCABKDQj___________8BEAA',
+  },
+  {
+    name:  'Laguna Buitrago',
+    label: '360° Field View · Laguna Buitrago',
+    desc:  'A high-altitude glacial lake at 3,600 m in the Eastern Cordillera, surrounded by cushion-plant communities and dense frailejón stands — one of the most intact páramo landscapes near Bogotá.',
+    lat:   4.7574235,
+    lng:   -73.8292926,
+    url:   'https://earth.app.goo.gl/?apn=com.google.earth&isi=293622097&ius=googleearth&link=https%3a%2f%2fearth.google.com%2fweb%2f%404.7574235,-73.8292926,3591.33938579a,0d,60y,234.89479306h,88.51625632t,0r%2fdata%3dCgRCAggBIhsKF0NJSE0wb2dLRUlDQWdJQzRwOTJ0dmdFEAU6AwoBMEICCABKDQj___________8BEAA',
+  },
+];
+
 const LG = {
   paramoFill:      null,
   paramoOutline:   null,
+  views360:        null,   // 360° field-view markers — overview tab only
   speciesHexLayer: null,   // aggregated hex — richness / count / decade themes
   gbifPointsLayer: null,   // GBIF occurrence points — shown when 'points' theme is active
   speciesPoints:   null,
@@ -209,7 +248,7 @@ const DATA = {
 
 // Per-panel default visible layers
 const PANEL_LAYERS = {
-  overview:  ['paramoFill', 'paramoOutline'],
+  overview:  ['paramoFill', 'paramoOutline', 'views360'],
   // build: no base layers — user stacks environmental layers interactively via build-paramo.js.
   // The compare toggle in the panel can optionally surface paramoFill.
   build:     [],
@@ -723,8 +762,84 @@ function loadAllData() {
   console.time('[perf] home:paramo-layers');
   buildParamoFill();
   buildParamoOutline();
+  build360ViewMarkers();
   applyPanelLayers('overview');
   console.timeEnd('[perf] home:paramo-layers');
+}
+
+// ============================================================
+// 360° FIELD VIEW MARKERS + MODAL
+// Lightweight gold markers on the overview map. Clicking opens
+// a compact floating card with a Google Earth deep-link.
+// Nothing is preloaded — modal is built once and reused.
+// ============================================================
+
+function build360ViewMarkers() {
+  if (LG.views360) { map.removeLayer(LG.views360); }
+  LG.views360 = L.layerGroup();
+
+  PARAMO_360_VIEWS.forEach(view => {
+    const icon = L.divIcon({
+      html: `<div class="v360-marker" title="${view.label}">
+               <svg width="11" height="11" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                 <circle cx="5.5" cy="5.5" r="4" stroke="#F9A825" stroke-width="1.5"/>
+                 <circle cx="5.5" cy="5.5" r="1.8" fill="#F9A825"/>
+               </svg>
+               <span class="v360-label">360°</span>
+             </div>`,
+      className: 'v360-icon',
+      iconSize:  [48, 20],
+      iconAnchor:[24, 10],
+    });
+
+    const marker = L.marker([view.lat, view.lng], { icon, pane: 'markerPane' });
+    marker.on('click', (e) => {
+      L.DomEvent.stopPropagation(e);
+      _show360Modal(view);
+    });
+    LG.views360.addLayer(marker);
+  });
+}
+
+// ── Modal ─────────────────────────────────────────────────────
+let _v360ModalEl = null;
+
+function _ensure360Modal() {
+  if (_v360ModalEl) return _v360ModalEl;
+
+  _v360ModalEl = document.createElement('div');
+  _v360ModalEl.id        = 'v360-modal';
+  _v360ModalEl.className = 'v360-modal v360-modal--hidden';
+  _v360ModalEl.innerHTML = `
+    <button class="v360-modal-close" aria-label="Close">✕</button>
+    <p  class="v360-modal-kicker">🌐 360° Field View</p>
+    <h3 class="v360-modal-name"></h3>
+    <p  class="v360-modal-desc"></p>
+    <a  class="v360-modal-btn" href="#" target="_blank" rel="noopener noreferrer">
+      Open in Google Earth&nbsp;→
+    </a>
+  `;
+
+  // Close button
+  _v360ModalEl.querySelector('.v360-modal-close').addEventListener('click', () => {
+    _v360ModalEl.classList.add('v360-modal--hidden');
+  });
+
+  // Close on Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') _v360ModalEl.classList.add('v360-modal--hidden');
+  });
+
+  document.getElementById('map-main').appendChild(_v360ModalEl);
+  return _v360ModalEl;
+}
+
+function _show360Modal(view) {
+  const modal = _ensure360Modal();
+  modal.querySelector('.v360-modal-name').textContent = view.name;
+  modal.querySelector('.v360-modal-desc').textContent = view.desc;
+  modal.querySelector('.v360-modal-btn').href         = view.url;
+  modal.classList.remove('v360-modal--hidden');
 }
 
 // ── Lazy-load tracking ──────────────────────────────────────────────────────

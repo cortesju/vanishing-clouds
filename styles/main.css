@@ -3989,6 +3989,161 @@ body.terrain-active .leaflet-control-scale {
 }
 
 /* ============================================================
+   360° FIELD VIEW MARKERS
+   ============================================================ */
+
+/* Remove Leaflet's default white box around divIcon */
+.v360-icon {
+  background: none !important;
+  border: none !important;
+}
+
+.v360-marker {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px 3px 5px;
+  background: rgba(10, 30, 18, 0.82);
+  border: 1px solid rgba(249, 168, 37, 0.65);
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.18s, border-color 0.18s, transform 0.18s;
+  backdrop-filter: blur(4px);
+}
+
+.v360-marker:hover {
+  background: rgba(10, 30, 18, 0.95);
+  border-color: rgba(249, 168, 37, 1);
+  transform: scale(1.08);
+}
+
+.v360-label {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #F9A825;
+  line-height: 1;
+}
+
+/* Subtle pulse on the SVG circle — draws attention without being annoying */
+.v360-marker svg circle:first-child {
+  animation: v360Pulse 2.8s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes v360Pulse {
+  0%,100% { opacity: 1;   r: 4; }
+  50%      { opacity: 0.5; r: 5; }
+}
+
+/* ============================================================
+   360° FIELD VIEW MODAL
+   ============================================================ */
+
+.v360-modal {
+  position: absolute;
+  bottom: 2.2rem;
+  right: 1.4rem;
+  z-index: 8500;
+  width: 280px;
+  background: rgba(248, 250, 245, 0.97);
+  border: 1px solid rgba(200, 169, 75, 0.35);
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(20, 40, 28, 0.22);
+  backdrop-filter: blur(10px);
+  padding: 1.1rem 1.2rem 1.2rem;
+
+  /* Slide-up entrance */
+  transform: translateY(0);
+  opacity: 1;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.v360-modal--hidden {
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+}
+
+.v360-modal-close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  font-size: 0.85rem;
+  color: var(--text-light);
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.v360-modal-close:hover {
+  color: var(--text-dark);
+  background: rgba(0,0,0,0.06);
+}
+
+.v360-modal-kicker {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #A07830;
+  margin: 0 0 0.35rem;
+}
+
+.v360-modal-name {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin: 0 0 0.55rem;
+  line-height: 1.2;
+}
+
+.v360-modal-desc {
+  font-size: 0.76rem;
+  color: var(--text-medium);
+  line-height: 1.55;
+  margin: 0 0 1rem;
+}
+
+.v360-modal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.5rem 1.1rem;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  transition: background 0.18s, transform 0.15s;
+}
+
+.v360-modal-btn:hover {
+  background: var(--primary-light);
+  transform: translateY(-1px);
+}
+
+/* On mobile: modal goes to bottom of screen, full width */
+@media (max-width: 768px) {
+  .v360-modal {
+    bottom: 0;
+    right: 0;
+    left: 0;
+    width: 100%;
+    border-radius: 14px 14px 0 0;
+    border-bottom: none;
+  }
+}
+
+/* ============================================================
    WELCOME / LANDING OVERLAY
    ============================================================ */
 
