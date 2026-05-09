@@ -484,6 +484,7 @@ function initMap() {
   initDetailTileOverlay();
   map.on('zoomend', updateDetailLayerVisibility);
   map.on('zoomend', updateGbifLayersByZoom);
+  map.on('zoomend', updateFieldViewMarkerVisibility);
 
   // Load all data then build initial layers
   loadAllData();
@@ -828,6 +829,7 @@ function loadAllData() {
   buildParamoOutline();
   build360ViewMarkers();
   applyPanelLayers('overview');
+  updateFieldViewMarkerVisibility();   // apply zoom gate on first load
   console.timeEnd('[perf] home:paramo-layers');
 }
 
@@ -863,6 +865,31 @@ function build360ViewMarkers() {
     });
     LG.views360.addLayer(marker);
   });
+}
+
+// ── Zoom-gated visibility ────────────────────────────────────
+// Markers are only shown when the overview tab is active AND the
+// map is zoomed in enough to make them useful and non-cluttering.
+const VIEWS360_MIN_ZOOM = 7;
+
+function updateFieldViewMarkerVisibility() {
+  if (!LG.views360 || !map) return;
+
+  const shouldShow = _mapActivePanel === 'overview' && map.getZoom() >= VIEWS360_MIN_ZOOM;
+
+  if (shouldShow && !map.hasLayer(LG.views360)) {
+    map.addLayer(LG.views360);
+  } else if (!shouldShow && map.hasLayer(LG.views360)) {
+    map.removeLayer(LG.views360);
+    // Hide the modal if it was open — markers are no longer visible
+    if (_v360ModalEl) _v360ModalEl.classList.add('v360-modal--hidden');
+  }
+
+  // Update the zoom-hint text in the overview panel (if the element exists)
+  const hint = document.getElementById('v360-zoom-hint');
+  if (hint) {
+    hint.style.display = shouldShow ? 'none' : '';
+  }
 }
 
 // ── Modal ─────────────────────────────────────────────────────
@@ -1951,12 +1978,15 @@ window.onPanelChange = function(panelId) {
 
   // Apply whatever layers are already built (null layers are skipped gracefully).
   applyPanelLayers(panelId);
+  // Zoom gate must run AFTER applyPanelLayers so it can override any unconditional add
+  updateFieldViewMarkerVisibility();
 
   // Lazy-build this panel's heavy layers if visiting for the first time.
   // On completion, re-apply layers and fix any theme state corrections.
   _ensurePanelLayers(panelId).then(() => {
     if (_mapActivePanel !== panelId) return;   // user navigated away — discard
     applyPanelLayers(panelId);
+    updateFieldViewMarkerVisibility();   // re-apply zoom gate after lazy build
     if (panelId === 'species') _applySpeciesThemeCorrection();
   });
 

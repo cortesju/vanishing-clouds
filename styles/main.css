@@ -4148,6 +4148,19 @@ body.terrain-active .v360-modal {
   }
 }
 
+/* Zoom hint shown in the overview panel when zoom < VIEWS360_MIN_ZOOM */
+.v360-zoom-hint {
+  font-size: 0.72rem;
+  color: var(--text-light);
+  background: rgba(200, 169, 75, 0.08);
+  border: 1px solid rgba(200, 169, 75, 0.2);
+  border-radius: 6px;
+  padding: 0.45rem 0.7rem;
+  margin: 0.5rem 0 0;
+  opacity: 0.85;
+  transition: opacity 0.2s;
+}
+
 /* ============================================================
    WELCOME / LANDING OVERLAY
    ============================================================ */

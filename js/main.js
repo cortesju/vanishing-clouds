@@ -45,6 +45,10 @@ const PANEL_TEMPLATES = {
         <span>Click any green polygon on the map to explore a páramo complex. Hover to preview.</span>
       </div>
 
+      <p id="v360-zoom-hint" class="v360-zoom-hint">
+        🔍 Zoom in to reveal 360° field-view points on the map.
+      </p>
+
       <div class="panel-divider"></div>
 
       <div class="panel-about">
