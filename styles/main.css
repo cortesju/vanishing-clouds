@@ -4001,30 +4001,36 @@ body.terrain-active .leaflet-control-scale {
 .v360-marker {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 7px 3px 5px;
-  background: rgba(10, 30, 18, 0.82);
-  border: 1px solid rgba(249, 168, 37, 0.65);
+  gap: 3px;
+  padding: 2px 5px 2px 4px;
+  background: rgba(10, 30, 18, 0.78);
+  border: 1px solid rgba(249, 168, 37, 0.52);
   border-radius: 999px;
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.18s, border-color 0.18s, transform 0.18s;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(3px);
 }
 
 .v360-marker:hover {
-  background: rgba(10, 30, 18, 0.95);
-  border-color: rgba(249, 168, 37, 1);
-  transform: scale(1.08);
+  background: rgba(10, 30, 18, 0.92);
+  border-color: rgba(249, 168, 37, 0.9);
+  transform: scale(1.12);
 }
 
 .v360-label {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: 9px;
+  font-size: 7.5px;
   font-weight: 700;
   letter-spacing: 0.06em;
   color: #F9A825;
   line-height: 1;
+}
+
+/* At zoom ≥ 10, scale the icon up slightly so it's still readable when zoomed in */
+#map-main.v360-z-high .v360-icon {
+  transform: scale(1.18);
+  transform-origin: center bottom;
 }
 
 /* Subtle pulse on the SVG circle — draws attention without being annoying */

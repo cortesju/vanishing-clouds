@@ -855,15 +855,15 @@ function build360ViewMarkers() {
   PARAMO_360_VIEWS.forEach(view => {
     const icon = L.divIcon({
       html: `<div class="v360-marker" title="${view.label}">
-               <svg width="11" height="11" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+               <svg width="8" height="8" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg">
                  <circle cx="5.5" cy="5.5" r="4" stroke="#F9A825" stroke-width="1.5"/>
                  <circle cx="5.5" cy="5.5" r="1.8" fill="#F9A825"/>
                </svg>
                <span class="v360-label">360°</span>
              </div>`,
       className: 'v360-icon',
-      iconSize:  [48, 20],
-      iconAnchor:[24, 10],
+      iconSize:  [30, 13],
+      iconAnchor:[15,  7],
     });
 
     const marker = L.marker([view.lat, view.lng], { icon, pane: 'markerPane' });
@@ -897,6 +897,12 @@ function updateFieldViewMarkerVisibility() {
   const hint = document.getElementById('v360-zoom-hint');
   if (hint) {
     hint.style.display = shouldShow ? 'none' : '';
+  }
+
+  // Optional zoom-based scale: add class to map container so CSS can nudge size
+  const mapEl = document.getElementById('map-main');
+  if (mapEl && map) {
+    mapEl.classList.toggle('v360-z-high', map.getZoom() >= 10);
   }
 }
 
