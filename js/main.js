@@ -65,16 +65,25 @@ const PANEL_TEMPLATES = {
       <h2 class="panel-title">Life Found Nowhere Else</h2>
       <p class="panel-lead">Endemic species uniquely adapted to the extreme cold and humidity of Colombia's high Andes.</p>
 
-      <p class="panel-note" style="font-size:0.78rem;color:var(--text-medium);background:rgba(27,94,59,0.06);border-radius:6px;padding:0.5rem 0.75rem;margin-bottom:0.75rem;">Note: Species occurrence points may take a few moments to load, especially at broad zoom levels.</p>
+      <!-- View controls row: entry zoom label + reset button -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.6rem;gap:0.5rem;">
+        <p class="panel-note" style="font-size:0.76rem;color:var(--text-medium);background:rgba(27,94,59,0.06);border-radius:6px;padding:0.4rem 0.65rem;margin:0;flex:1;">
+          Showing Chingaza · Sumapaz — densest records area.
+        </p>
+        <button onclick="window.resetSpeciesView()"
+          style="flex-shrink:0;font-size:0.72rem;padding:0.3rem 0.6rem;border:1px solid rgba(27,94,59,0.25);border-radius:6px;background:rgba(27,94,59,0.06);color:var(--text-medium);cursor:pointer;white-space:nowrap;">
+          🗺 Full range
+        </button>
+      </div>
 
       <!-- ── Map theme selector ───────────────────────────────── -->
       <div class="species-map-section">
         <span class="species-section-label">MAP THEME</span>
         <div class="species-theme-selector">
-          <button class="theme-btn"        data-theme="richness">Species Richness</button>
+          <button class="theme-btn active" data-theme="richness">Species Richness</button>
           <button class="theme-btn"        data-theme="count">Record Count</button>
           <button class="theme-btn"        data-theme="decade">Decade</button>
-          <button class="theme-btn active" data-theme="points">Species Points</button>
+          <button class="theme-btn"        data-theme="points">Species Points</button>
         </div>
 
         <!-- Small description of the active hex theme — hidden for points -->
@@ -82,6 +91,10 @@ const PANEL_TEMPLATES = {
 
         <!-- Sub-filter shown only when Species Points theme is active -->
         <div id="species-points-filter" class="species-points-filter">
+          <!-- Status line: loading indicator + record cap notice (Option D) -->
+          <p id="gbif-points-status" style="font-size:0.72rem;color:var(--text-medium);margin:0 0 0.5rem;opacity:0.7;">
+            Showing up to 1,000 points in current view
+          </p>
           <span class="species-section-label" style="margin-bottom:0.4rem">FILTER BY</span>
           <div class="points-filter-btns">
             <button class="pts-btn active" data-kingdom="">All</button>

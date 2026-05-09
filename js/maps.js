@@ -12,6 +12,12 @@ const DEFAULT_ZOOM      = 7;              // country-close — Andean belt fills
 const MIN_ZOOM          = 3;              // zoom-out limit: shows all Colombia
 const MAX_ZOOM          = 9;             // zoom-in limit: ~20 miles on a 1080p monitor (23 mi full-screen)
 
+// Species panel entry view — central Andes belt where GBIF records are densest
+// (Chingaza / Sumapaz region, ~50 km SE of Bogotá). Tight bbox keeps initial
+// GBIF points query fast; user can zoom out via "View full range" button.
+const SPECIES_ENTRY_CENTER = [4.3, -74.1];
+const SPECIES_ENTRY_ZOOM   = 9;   // = POINTS_MIN_ZOOM (declared below)
+
 // ---- PARAMO FEATURE LAYER (ArcGIS FeatureServer) ----
 const PARAMO_FEATURE_URL = 'https://services1.arcgis.com/ZIL9uO234SBBPGL7/arcgis/rest/services/Paramos_de_Colombia_CopyFeatures/FeatureServer/0';
 
@@ -207,7 +213,7 @@ const PANEL_LAYERS = {
   // build: no base layers — user stacks environmental layers interactively via build-paramo.js.
   // The compare toggle in the panel can optionally surface paramoFill.
   build:     [],
-  species:   ['paramoOutline', 'gbifPointsLayer'],   // GBIF points are the default theme
+  species:   ['paramoOutline', 'speciesHexLayer'],    // hex richness is default; points built lazily
   // threats: managed entirely by threats.js — no base layers from PANEL_LAYERS
   threats:   [],
   urgency:   ['urgencyHexagons', 'paramoOutline'],
@@ -217,8 +223,9 @@ const PANEL_LAYERS = {
 // Current time-period filter for species points
 let currentPeriod = 'all';
 
-// Active theme for the species hex layer — 'points' is default (shows GBIF occurrence points)
-let activeSpeciesTheme = 'points';
+// Active theme for the species hex layer — 'richness' is default (hex aggregates load instantly)
+// Points theme is built lazily only when the user explicitly selects it.
+let activeSpeciesTheme = 'richness';
 
 // Track which panel is active so GBIF points never bleed onto non-species panels
 // (named _mapActivePanel to avoid collision with main.js's own activePanel variable)
@@ -237,6 +244,8 @@ let gbifHeatLayer         = null;   // L.heatLayer instance (zoom-out view)
 let _gbifKingdomFilter    = null;   // "Animalia" | "Plantae" | null
 let _gbifDecadeIdx        = 4;      // index into GBIF_DECADES (4 = all time)
 let _gbifPlayInterval     = null;   // setInterval handle for timeline play
+let _gbifQuerySeq         = 0;      // incremented per query to cancel stale callbacks
+let _gbifMoveEndWired     = false;  // moveend listener added at most once
 
 // Hex layer timeline state (shared across richness / count / decade themes)
 let _hexDecadeIdx         = 4;      // index into GBIF_DECADES (4 = show all)
@@ -733,10 +742,10 @@ async function _ensurePanelLayers(panelId) {
   switch (panelId) {
 
     case 'species': {
-      // Both layers come from ArcGIS FeatureServer — no GeoJSON fetch needed.
+      // Hex layer only — instant (aggregated, ~50 features).
+      // gbifPointsLayer is built lazily in switchSpeciesTheme() when user selects 'points'.
       console.time('[perf] load:species-layers');
       buildSpeciesHexLayer();
-      buildGbifPointsLayer();
       console.timeEnd('[perf] load:species-layers');
       break;
     }
@@ -1012,38 +1021,100 @@ function buildGbifPointPopup(p) {
     </div>`;
 }
 
+// ── GBIF points: query-based approach (Options C + D) ─────────
+// Instead of L.esri.featureLayer (which paginates through ALL records globally),
+// we run a one-shot L.esri.query per viewport on each moveend, hard-capped at
+// GBIF_POINTS_LIMIT features.  This keeps the DOM lean and the initial load fast.
+const GBIF_POINTS_LIMIT = 500;
+
 function buildGbifPointsLayer() {
-  if (LG.gbifPointsLayer) { map.removeLayer(LG.gbifPointsLayer); }
-  LG.gbifPointsLayer = L.esri.featureLayer({
-    url: GBIF_POINTS_URL,
-    pointToLayer: (feature, latlng) => L.marker(latlng, { icon: createHexIcon(feature.properties?.kingdom) }),
-    onEachFeature(feature, layer) {
-      // Click opens the full species modal (with GBIF photo) via species.js
-      layer.on('click', function(e) {
-        L.DomEvent.stopPropagation(e);
-        if (typeof window.openGbifPointModal === 'function') {
-          window.openGbifPointModal(feature.properties || {});
-        }
+  // Create a LayerGroup to hold the current viewport's geoJSON markers.
+  if (LG.gbifPointsLayer) {
+    if (map.hasLayer(LG.gbifPointsLayer)) map.removeLayer(LG.gbifPointsLayer);
+  }
+  LG.gbifPointsLayer = L.layerGroup();
+
+  // Wire the moveend listener exactly once for the lifetime of the page.
+  if (!_gbifMoveEndWired) {
+    map.on('moveend', _refreshGbifQueryLayer);
+    _gbifMoveEndWired = true;
+  }
+  // Fire immediately for the current viewport.
+  _refreshGbifQueryLayer();
+}
+
+// Re-query the FeatureServer for the current map extent, replace markers.
+// Stale callbacks (from previous queries still in flight) are discarded via seq.
+function _refreshGbifQueryLayer() {
+  if (activeSpeciesTheme !== 'points' || _mapActivePanel !== 'species') return;
+  if (!LG.gbifPointsLayer) return;
+
+  _setGbifPointsStatus('loading');
+  const seq = ++_gbifQuerySeq;
+
+  L.esri.query({ url: GBIF_POINTS_URL })
+    .where(buildGbifWhere())
+    .within(map.getBounds())
+    .limit(GBIF_POINTS_LIMIT)
+    .run((err, fc) => {
+      if (seq !== _gbifQuerySeq) return;    // superseded by a newer query
+      if (err) {
+        console.warn('[maps.js] GBIF points query failed:', err);
+        _setGbifPointsStatus('loaded', 0);
+        return;
+      }
+
+      // Swap out the old markers for the new batch.
+      LG.gbifPointsLayer.clearLayers();
+
+      const geojsonLayer = L.geoJSON(fc, {
+        pointToLayer: (feature, latlng) =>
+          L.marker(latlng, { icon: createHexIcon(feature.properties?.kingdom) }),
+        onEachFeature(feature, layer) {
+          layer.on('click', function(e) {
+            L.DomEvent.stopPropagation(e);
+            if (typeof window.openGbifPointModal === 'function') {
+              window.openGbifPointModal(feature.properties || {});
+            }
+          });
+          layer.on('mouseover', function() {
+            if (_mapMoving) return;
+            const { fill, stroke } = GBIF_COLORS[gbifKingdomKey(feature.properties?.kingdom)];
+            const pts = '11,5 8.5,0.5 3.5,0.5 1,5 3.5,9.5 8.5,9.5';
+            this.setIcon(L.divIcon({
+              html: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="12" viewBox="0 0 12 10">
+                       <polygon points="${pts}" fill="${fill}" fill-opacity="1"
+                                stroke="${stroke}" stroke-width="1.2"/>
+                     </svg>`,
+              className: 'gbif-hex-marker',
+              iconSize: [14, 12], iconAnchor: [7, 6], popupAnchor: [0, -7],
+            }));
+          });
+          layer.on('mouseout', function() {
+            this.setIcon(createHexIcon(feature.properties?.kingdom));
+          });
+        },
       });
-      // Highlight on hover by swapping to a larger, fully-opaque icon
-      layer.on('mouseover', function() {
-        if (_mapMoving) return;
-        const { fill, stroke } = GBIF_COLORS[gbifKingdomKey(feature.properties?.kingdom)];
-        const pts = '11,5 8.5,0.5 3.5,0.5 1,5 3.5,9.5 8.5,9.5';
-        this.setIcon(L.divIcon({
-          html: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="12" viewBox="0 0 12 10">
-                   <polygon points="${pts}" fill="${fill}" fill-opacity="1"
-                            stroke="${stroke}" stroke-width="1.2"/>
-                 </svg>`,
-          className: 'gbif-hex-marker',
-          iconSize: [14, 12], iconAnchor: [7, 6], popupAnchor: [0, -7],
-        }));
-      });
-      layer.on('mouseout', function() {
-        this.setIcon(createHexIcon(feature.properties?.kingdom));
-      });
-    },
-  });
+
+      LG.gbifPointsLayer.addLayer(geojsonLayer);
+      _setGbifPointsStatus('loaded', fc?.features?.length ?? 0);
+    });
+}
+
+// Update the inline status line shown below the Points theme controls.
+function _setGbifPointsStatus(state, count) {
+  const el = document.getElementById('gbif-points-status');
+  if (!el) return;
+  if (state === 'loading') {
+    el.textContent = '⏳ Loading points…';
+    el.style.opacity = '1';
+  } else {
+    const n = count ?? 0;
+    el.textContent = n >= GBIF_POINTS_LIMIT
+      ? `Showing ${GBIF_POINTS_LIMIT} of many points in this view — pan to explore`
+      : `Showing ${n} point${n !== 1 ? 's' : ''} in this view`;
+    el.style.opacity = '0.7';
+  }
 }
 
 // ── Heat map — shown when zoom < POINTS_MIN_ZOOM ─────────────
@@ -1110,16 +1181,14 @@ function updateGbifLayersByZoom() {
 // Kingdom sub-filter (All / Animals / Plants)
 window.filterGbifPoints = function(kingdom) {
   _gbifKingdomFilter = kingdom || null;
-  const where = buildGbifWhere();
-  if (LG.gbifPointsLayer) LG.gbifPointsLayer.setWhere(where);
+  _refreshGbifQueryLayer();   // re-query current viewport with new filter
   refreshGbifHeatData();
 };
 
 // Time-slider step (0–4, cumulative decades)
 window.setGbifDecade = function(idx) {
   _gbifDecadeIdx = Number(idx);
-  const where = buildGbifWhere();
-  if (LG.gbifPointsLayer) LG.gbifPointsLayer.setWhere(where);
+  _refreshGbifQueryLayer();   // re-query current viewport with new decade filter
   refreshGbifHeatData();
   // Update label in the sidebar if visible
   const lbl = document.getElementById('ts-decade-label');
@@ -1200,6 +1269,12 @@ window.switchSpeciesTheme = function(themeName) {
   window._activeSpeciesTheme = themeName;
 
   if (themeName === 'points') {
+    // Option C: lazy-build the heavy featureLayer only on first selection
+    if (!LG.gbifPointsLayer) buildGbifPointsLayer();
+    // Option A: if still at broad zoom, fly to the dense-records entry view
+    if (map && map.getZoom() < SPECIES_ENTRY_ZOOM) {
+      map.flyTo(SPECIES_ENTRY_CENTER, SPECIES_ENTRY_ZOOM, { duration: 1.0, easeLinearity: 0.5 });
+    }
     if (LG.speciesHexLayer && map.hasLayer(LG.speciesHexLayer)) map.removeLayer(LG.speciesHexLayer);
     updateGbifLayersByZoom();
   } else {
@@ -1626,6 +1701,8 @@ function _destroySpeciesLayers() {
   // Stop any running playback timers
   if (_gbifPlayInterval) { clearInterval(_gbifPlayInterval); _gbifPlayInterval = null; }
   if (_hexPlayInterval)  { clearInterval(_hexPlayInterval);  _hexPlayInterval  = null; }
+  // Cancel any in-flight GBIF query callback
+  _gbifQuerySeq++;
 
   if (LG.speciesHexLayer) {
     if (map.hasLayer(LG.speciesHexLayer)) map.removeLayer(LG.speciesHexLayer);
@@ -1725,11 +1802,19 @@ window.onPanelChange = function(panelId) {
     else window.TP.hide();
   }
 
-  // Species panel: correct layer visibility for the active theme.
-  // _ensurePanelLayers().then() also calls this after lazy build completes.
-  if (panelId === 'species') _applySpeciesThemeCorrection();
+  // Species panel: fly to the dense-records entry view (Option A) and correct
+  // layer visibility for the active theme.
+  if (panelId === 'species') {
+    if (map) map.flyTo(SPECIES_ENTRY_CENTER, SPECIES_ENTRY_ZOOM, { duration: 1.2, easeLinearity: 0.5 });
+    _applySpeciesThemeCorrection();
+  }
 
   // Threats panel: wiring is handled by threats.js via main.js afterPanelRender
+};
+
+// Reset species map to the full Colombia view (called by "View full range" button)
+window.resetSpeciesView = function() {
+  if (map) map.flyTo(COLOMBIA_CENTER, DEFAULT_ZOOM, { duration: 1.2, easeLinearity: 0.5 });
 };
 
 // Wire threat layer checkboxes (threats panel injects them dynamically)
