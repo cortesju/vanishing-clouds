@@ -1076,4 +1076,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Expose switchPanel globally so other JS can navigate panels
   window.switchPanel = switchPanel;
+
+  // ── Welcome screen ──────────────────────────────────────────────────────
+  // Show full-screen cinematic overlay on every load (no sessionStorage while testing).
+  // Remove .leaving guard once ready to gate by sessionStorage.
+  initWelcomeScreen();
 });
+
+function initWelcomeScreen() {
+  const screen = document.getElementById('welcome-screen');
+  const btn    = document.getElementById('enter-map-btn');
+  if (!screen || !btn) return;
+
+  // Dismiss handler
+  function dismiss() {
+    screen.classList.add('leaving');
+
+    // After the CSS transition finishes, fully hide + fix the map
+    screen.addEventListener('transitionend', function onDone(e) {
+      // Wait for the opacity transition specifically (not filter or transform)
+      if (e.propertyName !== 'opacity') return;
+      screen.removeEventListener('transitionend', onDone);
+
+      screen.style.display = 'none';
+
+      // Tell Leaflet the map container is now fully visible so tiles re-render correctly.
+      // window.map is exposed by maps.js right after L.map() initialisation.
+      if (window.map && typeof window.map.invalidateSize === 'function') {
+        window.map.invalidateSize({ animate: false });
+      }
+    });
+  }
+
+  btn.addEventListener('click', dismiss);
+
+  // Also allow pressing Escape or Enter to dismiss
+  document.addEventListener('keydown', function onKey(e) {
+    if (e.key === 'Escape' || e.key === 'Enter') {
+      document.removeEventListener('keydown', onKey);
+      dismiss();
+    }
+  });
+}

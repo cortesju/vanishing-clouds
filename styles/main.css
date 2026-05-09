@@ -3987,3 +3987,204 @@ body.terrain-active .leaflet-control-scale {
   color: var(--text-medium);
   line-height: 1.5;
 }
+
+/* ============================================================
+   WELCOME / LANDING OVERLAY
+   ============================================================ */
+
+.welcome-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+
+  /* B&W páramo photo with a dark-green cinematic wash */
+  background-image:
+    linear-gradient(
+      160deg,
+      rgba(8, 22, 14, 0.55) 0%,
+      rgba(10, 28, 18, 0.72) 60%,
+      rgba(5, 15, 10, 0.80) 100%
+    ),
+    url("../Photos/Blackwhite.jpg");
+  background-size: cover;
+  background-position: center 30%;
+
+  /* Exit transition — opacity + blur + slight scale */
+  transition:
+    opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1),
+    filter  1.5s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, filter, transform;
+}
+
+/* Leaving state — triggered by JS */
+.welcome-screen.leaving {
+  opacity: 0;
+  filter: blur(22px) brightness(1.6);
+  transform: scale(1.04);
+  pointer-events: none;
+}
+
+/* ── Fog layers ─────────────────────────────────────────── */
+.welcome-fog {
+  position: absolute;
+  inset: -15%;
+  pointer-events: none;
+}
+
+.welcome-fog--1 {
+  background:
+    radial-gradient(ellipse at 18% 25%, rgba(255,255,255,0.13) 0%, transparent 38%),
+    radial-gradient(ellipse at 82% 68%, rgba(255,255,255,0.09) 0%, transparent 42%),
+    radial-gradient(ellipse at 50% 80%, rgba(255,255,255,0.07) 0%, transparent 35%);
+  animation: fogDrift1 20s ease-in-out infinite alternate;
+}
+
+.welcome-fog--2 {
+  background:
+    radial-gradient(ellipse at 70% 20%, rgba(255,255,255,0.08) 0%, transparent 40%),
+    radial-gradient(ellipse at 30% 75%, rgba(255,255,255,0.06) 0%, transparent 35%);
+  animation: fogDrift2 26s ease-in-out infinite alternate;
+  opacity: 0.7;
+}
+
+@keyframes fogDrift1 {
+  from { transform: translateX(-2.5%) translateY(1.5%) scale(1.01); }
+  to   { transform: translateX( 2.5%) translateY(-1.5%) scale(0.99); }
+}
+
+@keyframes fogDrift2 {
+  from { transform: translateX(1.5%) translateY(-2%) scale(0.98); }
+  to   { transform: translateX(-1.5%) translateY(2%) scale(1.02); }
+}
+
+/* ── Content block ──────────────────────────────────────── */
+.welcome-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 2rem 2.5rem;
+  max-width: 680px;
+  width: 100%;
+}
+
+.welcome-kicker {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  color: rgba(249, 168, 37, 0.80);   /* --accent-gold at 80% */
+  text-transform: uppercase;
+  margin: 0 0 1.2rem;
+}
+
+.welcome-title {
+  font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  font-size: clamp(3.4rem, 10vw, 7.2rem);
+  font-weight: 300;
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+  color: #F5F0E8;   /* warm off-white */
+  margin: 0 0 1rem;
+  text-shadow: 0 2px 40px rgba(0,0,0,0.45);
+}
+
+.welcome-subtitle {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: clamp(1.1rem, 3.2vw, 1.55rem);
+  font-weight: 400;
+  font-style: italic;
+  color: rgba(249, 168, 37, 0.90);
+  letter-spacing: 0.04em;
+  margin: 0 0 1.4rem;
+}
+
+.welcome-desc {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: clamp(0.80rem, 2vw, 0.95rem);
+  font-weight: 400;
+  color: rgba(240, 238, 230, 0.72);
+  line-height: 1.7;
+  letter-spacing: 0.02em;
+  margin: 0 0 2.6rem;
+}
+
+/* Hide the <br> on very narrow screens so text reflows naturally */
+.welcome-br { display: inline; }
+
+/* ── Enter button ──────────────────────────────────────── */
+.welcome-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.85rem 2.2rem;
+  border-radius: 999px;
+  border: 1.5px solid rgba(249, 168, 37, 0.60);
+  background: rgba(249, 168, 37, 0.10);
+  color: #F9E8A0;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.25s, border-color 0.25s, transform 0.2s, box-shadow 0.25s;
+  box-shadow: 0 0 28px rgba(249, 168, 37, 0.08);
+}
+
+.welcome-btn:hover {
+  background: rgba(249, 168, 37, 0.22);
+  border-color: rgba(249, 168, 37, 0.90);
+  box-shadow: 0 0 40px rgba(249, 168, 37, 0.22);
+  transform: translateY(-2px);
+}
+
+.welcome-btn:active {
+  transform: translateY(0);
+}
+
+.welcome-btn-arrow {
+  font-size: 1rem;
+  transition: transform 0.2s;
+}
+
+.welcome-btn:hover .welcome-btn-arrow {
+  transform: translateX(4px);
+}
+
+/* ── Bottom credit ─────────────────────────────────────── */
+.welcome-credit {
+  position: absolute;
+  bottom: 1.2rem;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 0.62rem;
+  letter-spacing: 0.10em;
+  color: rgba(255,255,255,0.28);
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  pointer-events: none;
+}
+
+/* ── Mobile ────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .welcome-content {
+    padding: 1.5rem 1.8rem;
+  }
+  .welcome-desc .welcome-br {
+    display: none;
+  }
+  .welcome-btn {
+    padding: 0.78rem 1.8rem;
+    font-size: 0.82rem;
+  }
+  .welcome-credit {
+    font-size: 0.58rem;
+    bottom: 0.8rem;
+  }
+}

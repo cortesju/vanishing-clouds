@@ -27,10 +27,41 @@
   <!-- Esri Leaflet -->
   <script src="https://unpkg.com/esri-leaflet@3/dist/esri-leaflet.js"></script>
 
+  <!-- Google Fonts — Cormorant Garamond for cinematic welcome title -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet" />
+
   <!-- Site Styles -->
   <link rel="stylesheet" href="styles/main.css" />
 </head>
 <body>
+
+<!-- =====================================================
+     WELCOME / LANDING OVERLAY
+     Shown on first load; dismissed by clicking "Enter the map".
+     sessionStorage prevents repeat appearance within the same session.
+===================================================== -->
+<div id="welcome-screen" class="welcome-screen" aria-modal="true" role="dialog" aria-label="Welcome to Vanishing Clouds">
+  <!-- Animated fog layers -->
+  <div class="welcome-fog welcome-fog--1"></div>
+  <div class="welcome-fog welcome-fog--2"></div>
+
+  <!-- Central content -->
+  <div class="welcome-content">
+    <p class="welcome-kicker">EXPLORE COLOMBIA'S HIGHLANDS</p>
+    <h1 class="welcome-title">Vanishing<br>Clouds</h1>
+    <p class="welcome-subtitle">Colombia's Páramo Crisis</p>
+    <p class="welcome-desc">An interactive atlas of páramo ecosystems,<br class="welcome-br"> biodiversity, climate, and threat.</p>
+    <button id="enter-map-btn" class="welcome-btn">
+      <span class="welcome-btn-text">Enter the map</span>
+      <span class="welcome-btn-arrow">→</span>
+    </button>
+  </div>
+
+  <!-- Bottom credit line -->
+  <p class="welcome-credit">Data: GBIF · Instituto Humboldt · MapBiomas Colombia · NASA FIRMS</p>
+</div>
 
 <div id="app">
 
