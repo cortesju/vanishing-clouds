@@ -65,6 +65,8 @@ const PANEL_TEMPLATES = {
       <h2 class="panel-title">Life Found Nowhere Else</h2>
       <p class="panel-lead">Endemic species uniquely adapted to the extreme cold and humidity of Colombia's high Andes.</p>
 
+      <p class="panel-note" style="font-size:0.78rem;color:var(--text-medium);background:rgba(27,94,59,0.06);border-radius:6px;padding:0.5rem 0.75rem;margin-bottom:0.75rem;">Note: Species occurrence points may take a few moments to load, especially at broad zoom levels.</p>
+
       <!-- ── Map theme selector ───────────────────────────────── -->
       <div class="species-map-section">
         <span class="species-section-label">MAP THEME</span>
@@ -252,7 +254,8 @@ const PANEL_TEMPLATES = {
       <span class="panel-eyebrow">CONSERVATION</span>
       <h2 class="panel-title">Where Protection Matters Most</h2>
       <p class="panel-lead">A composite urgency score combining endemic richness, habitat loss, and threat pressure across 45 hexagonal zones.</p>
-      <p class="urgency-boundary-note" style="font-size:0.78rem;color:var(--text-medium);background:rgba(27,94,59,0.06);border-radius:6px;padding:0.5rem 0.75rem;margin-bottom:0.75rem;">Urgency scores are shown only within official páramo boundaries.</p>
+      <p class="urgency-boundary-note" style="font-size:0.78rem;color:var(--text-medium);background:rgba(27,94,59,0.06);border-radius:6px;padding:0.5rem 0.75rem;margin-bottom:0.5rem;">Urgency scores are shown only within official páramo boundaries.</p>
+      <p class="panel-note" style="font-size:0.78rem;color:var(--text-medium);background:rgba(196,139,30,0.08);border-radius:6px;padding:0.5rem 0.75rem;margin-bottom:0.75rem;">Note: This section is still a work in progress. Urgency results are being refined and should be interpreted as a preliminary visualization.</p>
       <div class="urgency-legend-panel">
         <div class="legend-item"><span class="legend-color" style="background:#FFFFCC;border:1px solid #ccc"></span> Very Low (1–2)</div>
         <div class="legend-item"><span class="legend-color" style="background:#C7E9B4"></span> Low (2–3)</div>
@@ -513,6 +516,12 @@ function switchPanel(panelId) {
     btn.classList.toggle('active', btn.dataset.panel === panelId);
   });
 
+  // On mobile: scroll the active tab into horizontal view
+  if (isMobile()) {
+    const activeTab = document.querySelector(`.tn-item[data-panel="${panelId}"]`);
+    if (activeTab) activeTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }
+
   // Inject content
   const scroll = document.getElementById('panel-scroll');
   if (!scroll) return;
@@ -625,6 +634,9 @@ function setPanelCollapsed(collapsed) {
   }
 }
 
+// Expose to maps.js for auto-collapse on first map interaction
+window.setPanelCollapsed = setPanelCollapsed;
+
 // ============================================================
 // ANIMATED STAT COUNTERS
 // ============================================================
@@ -687,7 +699,23 @@ function syncLayersDropdownToPanel(panelId) {
     const panels = attr.split(/\s+/);
     row.style.display = panels.includes(panelId) ? '' : 'none';
   });
+
+  // Build panel: sync checkbox states with live layer state from build-paramo.js
+  if (panelId === 'build' && typeof window.getBuildLayerState === 'function') {
+    const st = window.getBuildLayerState();
+    document.querySelectorAll('[data-build-layer-id]').forEach(row => {
+      const id = row.dataset.buildLayerId;
+      const cb = row.querySelector('input[type="checkbox"]');
+      if (!cb) return;
+      if (id === 'composite')  cb.checked = !!st.compositeOn;
+      else if (id === 'compare') cb.checked = !!st.compareOn;
+      else cb.checked = !!st.scores?.find(s => s.id === id)?.active;
+    });
+  }
 }
+
+// Expose so build-paramo.js can call it after layer state changes
+window.syncLayersDropdownToPanel = syncLayersDropdownToPanel;
 
 function initLayersDropdown() {
   const btn      = document.getElementById('map-layers-btn');
@@ -709,11 +737,28 @@ function initLayersDropdown() {
     }
   });
 
+  // ── Build panel layer rows — delegate to build-paramo.js ───
+  document.querySelectorAll('[data-build-layer-id]').forEach(row => {
+    const id = row.dataset.buildLayerId;
+    const cb = row.querySelector('input[type="checkbox"]');
+    if (!cb) return;
+    cb.addEventListener('change', () => {
+      if (typeof window.bpToggleFromDropdown === 'function') {
+        window.bpToggleFromDropdown(id);
+        // bpToggleFromDropdown calls syncLayersDropdownToPanel which corrects
+        // the checkbox to the actual post-toggle state
+      }
+    });
+  });
+
   // ── Data layers: visibility + opacity ──────────────────────
   document.querySelectorAll('#data-layers-list .layer-row').forEach(row => {
     const key = row.dataset.layerKey;
     const cb  = row.querySelector('input[type="checkbox"]');
     const sl  = row.querySelector('.layer-opacity-slider');
+
+    // Skip build-specific rows — handled above
+    if (row.dataset.buildLayerId) return;
 
     cb?.addEventListener('change', () => {
       window.setLayerVisible?.(key, cb.checked);

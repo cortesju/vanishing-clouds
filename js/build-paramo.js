@@ -498,6 +498,7 @@ function _buildLayerOn(id) {
 
   _showLegend(id);
   _updatePanelUI();
+  _notifyDropdown();
 }
 
 function _buildLayerOff(id) {
@@ -514,6 +515,7 @@ function _buildLayerOff(id) {
   if (!_needsSimplifiedBasemap()) _restoreBasemap();
   _updateLegendForCurrentState();
   _updatePanelUI();
+  _notifyDropdown();
 }
 
 // ============================================================
@@ -580,6 +582,7 @@ function _setComposite(on) {
 
   _updateLegendForCurrentState();
   _updatePanelUI();
+  _notifyDropdown();
 }
 
 // ============================================================
@@ -587,6 +590,7 @@ function _setComposite(on) {
 // ============================================================
 function _setCompare(on) {
   _bpCompareOn = on;
+  _notifyDropdown();
   if (!_bpMap || !window.LG) return;
   const pf = window.LG.paramoFill;
   if (!pf) return;
@@ -757,3 +761,60 @@ function cleanupBuildPanel() {
 window.initBuildPanel    = initBuildPanel;
 window.wireBuildPanel    = wireBuildPanel;
 window.cleanupBuildPanel = cleanupBuildPanel;
+
+// ── Map Layers dropdown integration ──────────────────────────────────────
+// Called by main.js syncLayersDropdownToPanel('build') to read current state.
+window.getBuildLayerState = function() {
+  return {
+    activeScore: _bpActiveScoreLayer,
+    compositeOn: _bpCompositeOn,
+    compareOn:   _bpCompareOn,
+    scores: BUILD_LAYERS_CONFIG.map(l => ({
+      id:     l.id,
+      active: !!_bpLayerEls[l.id]?.active,
+    })),
+  };
+};
+
+// Called when user clicks a checkbox in the Map Layers dropdown for the build panel.
+// Mirrors the action as if the user toggled the layer in the panel itself.
+window.bpToggleFromDropdown = function(layerId) {
+  if (layerId === 'composite') {
+    _setComposite(!_bpCompositeOn);
+    const btn = document.getElementById('bp-composite-btn');
+    if (btn) {
+      btn.classList.toggle('active', _bpCompositeOn);
+      btn.innerHTML = _bpCompositeOn
+        ? '<span class="bp-composite-icon">✕</span> Hide Composite'
+        : '<span class="bp-composite-icon">◎</span> Show Suitability Composite';
+    }
+  } else if (layerId === 'compare') {
+    const nextOn = !_bpCompareOn;
+    _setCompare(nextOn);
+    const ct = document.getElementById('bp-compare-toggle');
+    if (ct) ct.checked = nextOn;
+  } else {
+    const st = _bpLayerEls[layerId];
+    if (!st) return;
+    const card   = document.getElementById(`bp-card-${layerId}`);
+    const toggle = document.getElementById(`bp-toggle-${layerId}`);
+    if (st.active) {
+      _buildLayerOff(layerId);
+      if (toggle) toggle.checked = false;
+      card?.classList.remove('active');
+    } else {
+      _buildLayerOn(layerId);
+      if (toggle) toggle.checked = true;
+      card?.classList.add('active');
+    }
+  }
+  _notifyDropdown();
+};
+
+// Notify the Map Layers dropdown to refresh its build rows.
+// Only acts when the dropdown is open and the build panel is active.
+function _notifyDropdown() {
+  if (typeof window.syncLayersDropdownToPanel === 'function') {
+    window.syncLayersDropdownToPanel('build');
+  }
+}

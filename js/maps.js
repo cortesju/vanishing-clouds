@@ -389,6 +389,27 @@ function initMap() {
   // to .leaflet-map-pane is mirrored onto the popup pane on every 'move' event
   // so popups continue to track their anchor point correctly during drag.
   _hoistPopupPane();
+
+  // ── Auto-collapse overview panel on first map interaction ─────────────────
+  // When the user drags or zooms the map while the overview panel is open,
+  // collapse it automatically so the map is fully visible.
+  map.on('dragstart', _autoCollapseOverview);
+  map.on('zoomstart', _autoCollapseOverview);
+}
+
+function _autoCollapseOverview() {
+  if (_mapActivePanel !== 'overview') return;
+  const sp = document.getElementById('side-panel');
+  if (!sp) return;
+  const isMob = window.matchMedia('(max-width: 768px)').matches;
+  // On desktop: already collapsed if .collapsed present
+  // On mobile: already at peek state if .expanded absent
+  const alreadyCollapsed = isMob
+    ? !sp.classList.contains('expanded')
+    : sp.classList.contains('collapsed');
+  if (!alreadyCollapsed && typeof window.setPanelCollapsed === 'function') {
+    window.setPanelCollapsed(true);
+  }
 }
 
 // ============================================================

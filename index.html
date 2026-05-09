@@ -157,40 +157,56 @@
         <input type="range" class="layer-opacity-slider" min="0" max="100" value="100" title="Opacity">
       </div>
 
-      <!-- Elevation zones: Build a Páramo only -->
-      <div class="layer-row" draggable="true" data-layer-key="elevationZones"
-           data-panels="build">
-        <span class="drag-handle" title="Drag to reorder">⠿</span>
-        <input type="checkbox" id="gl-elevation">
-        <label for="gl-elevation" class="layer-row-label">
-          <span class="layer-swatch" style="background:linear-gradient(to right,#D0D0D0,#1B5E3B)"></span>
-          <span>Elevation zones</span>
+      <!-- Build a Páramo: dynamic layer rows.
+           These are read-only status mirrors of the build panel's score layers.
+           Clicking a checkbox triggers bpToggleFromDropdown(id) via initLayersDropdown().
+           syncLayersDropdownToPanel('build') keeps checkbox states in sync. -->
+      <div class="layer-row" data-panels="build" data-build-layer-id="elevation">
+        <input type="checkbox" id="bp-drop-elevation">
+        <label for="bp-drop-elevation" class="layer-row-label">
+          <span class="layer-swatch" style="background:linear-gradient(to right,#B2EBF2,#00695C)"></span>
+          <span>Elevation Score</span>
         </label>
-        <input type="range" class="layer-opacity-slider" min="0" max="100" value="100" title="Opacity">
       </div>
 
-      <!-- Agriculture pressure: Build a Páramo only -->
-      <div class="layer-row" draggable="true" data-layer-key="agriculture"
-           data-panels="build">
-        <span class="drag-handle" title="Drag to reorder">⠿</span>
-        <input type="checkbox" id="gl-agriculture">
-        <label for="gl-agriculture" class="layer-row-label">
-          <span class="layer-swatch" style="background:#F9A825"></span>
-          <span>Agriculture pressure</span>
+      <div class="layer-row" data-panels="build" data-build-layer-id="temperature">
+        <input type="checkbox" id="bp-drop-temperature">
+        <label for="bp-drop-temperature" class="layer-row-label">
+          <span class="layer-swatch" style="background:linear-gradient(to right,#E8F5E9,#1B5E20)"></span>
+          <span>Temperature Score</span>
         </label>
-        <input type="range" class="layer-opacity-slider" min="0" max="100" value="100" title="Opacity">
       </div>
 
-      <!-- Fire alerts: Build a Páramo panel only -->
-      <div class="layer-row" draggable="true" data-layer-key="fire"
-           data-panels="build">
-        <span class="drag-handle" title="Drag to reorder">⠿</span>
-        <input type="checkbox" id="gl-fire">
-        <label for="gl-fire" class="layer-row-label">
-          <span class="layer-swatch" style="background:#C0392B"></span>
-          <span>Fire alerts</span>
+      <div class="layer-row" data-panels="build" data-build-layer-id="precipitation">
+        <input type="checkbox" id="bp-drop-precipitation">
+        <label for="bp-drop-precipitation" class="layer-row-label">
+          <span class="layer-swatch" style="background:linear-gradient(to right,#FFF9C4,#0277BD)"></span>
+          <span>Moisture Suitability Score</span>
         </label>
-        <input type="range" class="layer-opacity-slider" min="0" max="100" value="100" title="Opacity">
+      </div>
+
+      <div class="layer-row" data-panels="build" data-build-layer-id="seasonality">
+        <input type="checkbox" id="bp-drop-seasonality">
+        <label for="bp-drop-seasonality" class="layer-row-label">
+          <span class="layer-swatch" style="background:linear-gradient(to right,#1A1A1A,#2E7D32)"></span>
+          <span>Climate Match Score</span>
+        </label>
+      </div>
+
+      <div class="layer-row" data-panels="build" data-build-layer-id="composite">
+        <input type="checkbox" id="bp-drop-composite">
+        <label for="bp-drop-composite" class="layer-row-label">
+          <span class="layer-swatch" style="background:linear-gradient(to right,#0A1628,#27AE60)"></span>
+          <span>Suitability Composite</span>
+        </label>
+      </div>
+
+      <div class="layer-row" data-panels="build" data-build-layer-id="compare">
+        <input type="checkbox" id="bp-drop-compare">
+        <label for="bp-drop-compare" class="layer-row-label">
+          <span class="layer-swatch" style="background:rgba(212,174,56,0.5);border:2px solid #A88018"></span>
+          <span>Official Páramo Boundaries</span>
+        </label>
       </div>
 
       <!-- Urgency index: Urgency panel only -->

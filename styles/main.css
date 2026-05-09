@@ -2003,6 +2003,191 @@ body.terrain-active .leaflet-control-scale {
 }
 
 /* ============================================================
+   19b. THREATS IN THE NEWS — floating news panel
+   Floats in the top-right corner of #map-main while the
+   Threats tab is active.  z-index: 451 keeps it above the
+   VectorTile GL canvas (z=450) but below the popup overlay (z=9000).
+   ============================================================ */
+
+/* Vanishing Clouds palette: cream/pale-green fog glass */
+#th-news-panel {
+  position: absolute;
+  top: calc(var(--nav-h) + 8px);
+  right: 12px;
+  z-index: 451;
+  width: 256px;
+  background: rgba(248, 250, 245, 0.94);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(200, 169, 75, 0.28);
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(40, 60, 45, 0.16);
+  font-family: var(--font-ui);
+  color: var(--text-dark);
+  overflow: hidden;
+  pointer-events: all;
+}
+
+.th-news-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0.80rem 0.50rem;
+  border-bottom: 1px solid rgba(200, 169, 75, 0.18);
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.th-news-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-dark);
+}
+
+.th-news-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-light);
+  font-size: 0.65rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 6px;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s;
+}
+
+.th-news-toggle:hover {
+  background: rgba(200, 169, 75, 0.14);
+  color: var(--primary);
+}
+
+.th-news-body {
+  max-height: 340px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(200, 169, 75, 0.25) transparent;
+}
+
+.th-news-body::-webkit-scrollbar { width: 4px; }
+.th-news-body::-webkit-scrollbar-track { background: transparent; }
+.th-news-body::-webkit-scrollbar-thumb {
+  background: rgba(200, 169, 75, 0.28);
+  border-radius: 2px;
+}
+
+/* Category filter row */
+.th-news-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.45rem 0.65rem;
+  border-bottom: 1px solid rgba(200, 169, 75, 0.12);
+  background: rgba(250, 248, 240, 0.55);
+}
+
+.th-news-cat {
+  padding: 0.18rem 0.48rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(200, 169, 75, 0.30);
+  background: rgba(27, 94, 59, 0.05);
+  color: var(--text-medium);
+  font-size: 0.64rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.th-news-cat:hover {
+  background: rgba(200, 169, 75, 0.12);
+  border-color: rgba(200, 169, 75, 0.55);
+  color: var(--primary);
+}
+
+.th-news-cat.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+/* Article list */
+.th-news-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.th-news-item {
+  display: block;
+  padding: 0.55rem 0.80rem;
+  border-bottom: 1px solid rgba(200, 169, 75, 0.10);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.12s;
+}
+
+.th-news-item:last-child {
+  border-bottom: none;
+}
+
+.th-news-item:hover {
+  background: rgba(200, 169, 75, 0.07);
+}
+
+.th-news-item-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-bottom: 0.2rem;
+}
+
+.th-news-icon {
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.th-news-item-title {
+  font-size: 0.70rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  line-height: 1.35;
+}
+
+.th-news-source {
+  font-size: 0.62rem;
+  color: #A07830;   /* warm gold — matches the Vanishing Clouds accent palette */
+  margin-bottom: 0.25rem;
+  letter-spacing: 0.03em;
+  font-weight: 600;
+}
+
+.th-news-desc {
+  font-size: 0.65rem;
+  color: var(--text-medium);
+  line-height: 1.45;
+}
+
+.th-news-empty {
+  padding: 0.75rem;
+  font-size: 0.70rem;
+  color: var(--text-light);
+  text-align: center;
+  margin: 0;
+}
+
+/* On mobile, shrink/hide the news panel to avoid covering the sheet */
+@media (max-width: 768px) {
+  #th-news-panel {
+    width: 210px;
+    top: calc(var(--nav-h) + 6px);
+    right: 8px;
+  }
+
+  .th-news-body {
+    max-height: 210px;
+  }
+}
+
+/* ============================================================
    20. RESPONSIVE — TABLET  (max-width: 900px)
    ============================================================ */
 @media (max-width: 900px) {
@@ -2035,30 +2220,69 @@ body.terrain-active .leaflet-control-scale {
   /* ── Root overrides ─────────────────────────────────────── */
   :root {
     --panel-w:      100vw;
-    --nav-h:        52px;
+    --nav-h:        96px;   /* 2-row nav: 52px logo row + 44px tab row */
     --mob-peek-h:   68px;   /* height of bottom-sheet peek strip */
     --mob-sheet-h:  62vh;   /* height of fully-expanded bottom sheet */
   }
 
-  /* ── Top navigation ──────────────────────────────────────── */
-  /* Hide desktop tab bar */
-  .tn-center { display: none; }
+  /* ── Top navigation — two-row layout ─────────────────────── */
+  /* Row 1: logo (.tn-left) + layers (.tn-right)               */
+  /* Row 2: horizontally scrollable tab bar (.tn-center)        */
+  /*                                                             */
+  /* DOM order is: .tn-left → .tn-center → .tn-right           */
+  /* CSS order overrides put .tn-right on row 1, tabs on row 2. */
+  #top-nav {
+    height: auto;           /* allow two rows */
+    flex-wrap: wrap;
+    padding: 0 0.75rem;
+    gap: 0;
+    align-items: stretch;
+  }
 
-  /* Show hamburger */
-  .tn-hamburger {
-    display: flex;
+  /* Row 1 items */
+  .tn-left {
+    order: 1;
+    flex: 1;
+    min-width: 0;
+    height: 52px;
     align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    font-size: 1.2rem;
-    line-height: 1;
-    background: rgba(255,255,255,0.65);
-    backdrop-filter: var(--fog-blur);
-    -webkit-backdrop-filter: var(--fog-blur);
-    border: 1px solid rgba(255,255,255,0.5);
+  }
+
+  .tn-right {
+    order: 2;
     flex-shrink: 0;
+    height: 52px;
+    align-items: center;
+  }
+
+  /* Hamburger is no longer needed — tab bar replaces it */
+  .tn-hamburger { display: none !important; }
+
+  /* Row 2: full-width horizontally scrollable tab bar */
+  .tn-center {
+    order: 3;               /* forces onto its own row after row-1 items */
+    display: flex !important;   /* override display:none */
+    width: 100%;
+    flex: none;
+    height: 44px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;      /* Firefox */
+    border-top: 1px solid var(--nav-border);
+    padding: 0 0.5rem;
+    gap: 0;
+    align-items: center;
+    justify-content: flex-start; /* left-align so tabs scroll */
+  }
+  .tn-center::-webkit-scrollbar { display: none; }
+
+  /* Tab items: must not shrink so the row stays scrollable */
+  .tn-item {
+    flex: 0 0 auto;
+    padding: 0.32rem 0.75rem;
+    font-size: 0.75rem;
+    border-radius: 6px;
   }
 
   /* Map Layers: keep visible but shrink to icon-only pill */
@@ -2070,25 +2294,13 @@ body.terrain-active .leaflet-control-scale {
   .tn-layers-btn .layers-btn-label { display: none; }
   .tn-layers-btn .chevron { display: none; }
 
-  /* ── Mobile nav drawer ────────────────────────────────────── */
+  /* ── Mobile nav drawer — hidden: scrollable tab bar replaces it ── */
+  /* The drawer is still injected by initMobile() JS but is no longer
+     needed or accessible (hamburger is hidden). Hide it unconditionally
+     so the translateY(-110%) trick cannot leak into the viewport when
+     --nav-h is taller than the drawer's own height allows. */
   #mob-nav-drawer {
-    position: fixed;
-    top: var(--nav-h);
-    left: 0;
-    right: 0;
-    background: rgba(255,255,255,0.97);
-    backdrop-filter: var(--fog-blur);
-    -webkit-backdrop-filter: var(--fog-blur);
-    border-bottom: 1px solid rgba(0,0,0,0.08);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.14);
-    z-index: 800;
-    padding: 0.6rem 0.75rem 0.9rem;
-    transform: translateY(-110%);
-    transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
-    /* visibility toggled by .open class */
-  }
-  #mob-nav-drawer.open {
-    transform: translateY(0);
+    display: none !important;
   }
 
   .mob-nav-grid {

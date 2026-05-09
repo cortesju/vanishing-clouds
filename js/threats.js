@@ -219,6 +219,71 @@ const TH_FIRE_DENSITY_LEGEND = [
 ];
 
 // ============================================================
+// THREATS IN THE NEWS — curated article list
+// Static data; links open in a new tab.
+// Categories: agriculture | mining | urban | fire | water | general
+// ============================================================
+
+const THREAT_MEDIA_ITEMS = [
+  {
+    category: 'mining',
+    icon: '⛏',
+    title: 'Mining in Colombian Páramos: A Legal Battle',
+    source: 'AIDA',
+    description: 'How advocacy groups challenged mining concessions inside legally protected páramo zones, and what the rulings mean for Santurbán.',
+    url: 'https://aida-americas.org/en/blog/protecting-colombias-paramos-mining',
+  },
+  {
+    category: 'mining',
+    icon: '⛏',
+    title: 'The Fight to Save Colombia\'s Páramos from Gold Mining',
+    source: 'Yale Environment 360',
+    description: 'Gold and coal extraction pressures push into high-altitude wetlands despite Constitutional Court bans on mining in páramos.',
+    url: 'https://e360.yale.edu/features/the-fight-to-save-colombias-paramos-from-gold-mining',
+  },
+  {
+    category: 'general',
+    icon: '🌿',
+    title: 'Colombia\'s Páramos: The World\'s Most Threatened Ecosystem',
+    source: 'The Revelator',
+    description: 'A deep look at why páramos are disappearing faster than almost any other ecosystem, and what researchers are doing about it.',
+    url: 'https://therevelator.org/colombias-paramos/',
+  },
+  {
+    category: 'water',
+    icon: '💧',
+    title: 'Páramos: Colombia\'s Water Towers Under Threat',
+    source: 'The Nature Conservancy',
+    description: 'How páramo ecosystems regulate freshwater for millions of Colombians, and the compounding threats from climate and land use.',
+    url: 'https://www.nature.org/en-us/about-us/where-we-work/latin-america/colombia/stories-in-colombia/colombias-water-tower/',
+  },
+  {
+    category: 'urban',
+    icon: '🏙',
+    title: 'Bogotá\'s Water Source at Risk as Sumapaz Páramo Shrinks',
+    source: 'Mongabay',
+    description: 'The world\'s largest páramo, Sumapaz, faces encroachment from Bogotá\'s expanding periphery, putting the city\'s water supply in jeopardy.',
+    url: 'https://news.mongabay.com/2020/04/bogotas-watershed-faces-encroachment/',
+  },
+  {
+    category: 'fire',
+    icon: '🔥',
+    title: 'NASA FIRMS: Near Real-Time Fire Data in the Andes',
+    source: 'NASA FIRMS',
+    description: 'Track active fire detections across Colombian páramo regions using VIIRS and MODIS satellite data from NASA\'s Fire Information for Resource Management System.',
+    url: 'https://firms.modaps.eosdis.nasa.gov/map/#d:24hrs;@-74.0,4.5,6.0z',
+  },
+  {
+    category: 'agriculture',
+    icon: '🌾',
+    title: 'Agriculture Pushes Into Colombia\'s High-Altitude Moorlands',
+    source: 'Mongabay',
+    description: 'Potato and livestock farming continue to expand into the páramo belt despite legal protections, driven by economic pressure on rural communities.',
+    url: 'https://news.mongabay.com/2019/09/colombias-highland-farmers-fight-for-rights-within-threatened-paramos/',
+  },
+];
+
+// ============================================================
 // MODULE STATE
 // Persists across panel visits — re-entering restores last state.
 // ============================================================
@@ -248,6 +313,16 @@ let _thLegendEl        = null;
 
 // Basemap simplification state (captured before hiding hillshade)
 let _thBasemapState    = null;
+
+// ── Threats in the News panel state ──────────────────────────────────────
+let _thMediaPanelEl    = null;       // DOM node for the floating news panel
+let _thMediaCatFilter  = 'all';      // active category filter
+let _thMediaCollapsed  = false;      // true when user has minimised the panel
+
+// ── Layer caching ─────────────────────────────────────────────────────────
+// _thStyleCache (url → patched style JSON) already avoids re-fetching VT styles.
+// _thFirePointsCache caches per-year GeoJSON so revisiting a year is instant.
+const _thFirePointsCache = new Map(); // key: String(year) → GeoJSON FeatureCollection
 
 // ── Fire pressure state ───────────────────────────────────────────────────
 let _thFireMode        = 'density';  // 'density' | 'points' | 'frequency'
@@ -784,6 +859,31 @@ function _thLandcoverUrlForYear(year) {
   }[year] || null;
 }
 
+// ── Adjacent-year VT style preloader ──────────────────────────────────────
+// After the active year loads, silently pre-fetch the style JSONs for
+// neighbouring years so the NEXT year switch skips the network round-trip.
+// Uses requestIdleCallback so it does not compete with active rendering.
+const _TH_YEARS = ['1986', '2000', '2010', '2020', '2024'];
+
+function _thPreloadAdjacentStyles(urlsForYear) {
+  // urlsForYear: function(year) → url|null
+  const idx = _TH_YEARS.indexOf(_thYear);
+  const neighbours = [_TH_YEARS[idx - 1], _TH_YEARS[idx + 1]].filter(Boolean);
+  const preload = () => {
+    neighbours.forEach(yr => {
+      const url = urlsForYear(yr);
+      if (url && !_thStyleCache[url]) {
+        _thFetchStyle(url).catch(() => {}); // warm cache, ignore errors
+      }
+    });
+  };
+  if (typeof requestIdleCallback !== 'undefined') {
+    requestIdleCallback(preload, { timeout: 5000 });
+  } else {
+    setTimeout(preload, 1500);
+  }
+}
+
 // A. Land-cover timeline — one VectorTileServer layer per year
 function _thApplyLandcover() {
   _thClearOverlays();
@@ -791,6 +891,7 @@ function _thApplyLandcover() {
   const url = _thLandcoverUrlForYear(_thYear);
   _thLoadVtLayer(url, `Land cover ${_thYear}`);
   _thShowLegend('landcover');
+  _thPreloadAdjacentStyles(_thLandcoverUrlForYear);
 }
 
 // ── Páramo reference underlay (threat mode only) ──────────────────────────
@@ -835,6 +936,9 @@ function _thApplyThreat() {
   _thShowParamoRef();   // add subtle páramo boundary underlay (z=455, below GL canvas)
   _thLoadVtLayer(url, `${cat ? cat.label : 'Threat'} ${_thYear}`);
   _thShowLegend('threat');
+  // Pre-fetch style JSONs for adjacent years in this category
+  const _activeCat = _thCategory;
+  _thPreloadAdjacentStyles(yr => TH_CATEGORIES[_activeCat]?.urls[yr] || null);
 }
 
 // ── Agriculture expansion helpers ────────────────────────────────────────
@@ -1194,9 +1298,18 @@ function _thShowFireDensity() {
 // are never two point layers on the map simultaneously.
 
 async function _thShowFirePoints() {
+  const yearKey = String(_thFireYear);
   const perfKey = `[perf] load:threats:Fire points ${_thFireYear}`;
   console.time(perfKey);
   console.log(`[threats.js] Querying fire points for year ${_thFireYear}`);
+
+  // Fade out the threats pane before swapping layers for a smooth year transition
+  const _tp = _thMap ? _thMap.getPane('threatsPane') : null;
+  if (_tp && _thFirePointsLayer) {
+    _tp.style.transition = 'opacity 0.25s ease';
+    _tp.style.opacity    = '0';
+    await new Promise(r => setTimeout(r, 260));
+  }
 
   // Always remove any existing points layer before adding a new one
   if (_thFirePointsLayer && _thMap) {
@@ -1207,34 +1320,41 @@ async function _thShowFirePoints() {
   // Detect date field (cached after first call)
   await _thDetectFireDateField();
 
-  const where = _thFireWhereForYear(_thFireYear);
-  console.log(`[threats.js] Fire points field: "${_thFireDateField}" (${_thFireDateFieldType}) | year: ${_thFireYear} | WHERE: ${where}`);
+  // ── Cache lookup — skip fetch if we already have this year's GeoJSON ──
+  let geojson = _thFirePointsCache.get(yearKey) || null;
 
-  // Direct FeatureServer query — returns GeoJSON, bypasses server renderer entirely
-  const queryUrl = `${FIRE_POINTS_URL}/0/query?` + new URLSearchParams({
-    where,
-    outFields:         '*',
-    f:                 'geojson',
-    returnGeometry:    'true',
-    resultRecordCount: '4000',  // request up to 4000 features per year
-  }).toString();
+  if (!geojson) {
+    const where = _thFireWhereForYear(_thFireYear);
+    console.log(`[threats.js] Fire points field: "${_thFireDateField}" (${_thFireDateFieldType}) | year: ${_thFireYear} | WHERE: ${where}`);
 
-  let geojson;
-  try {
-    const resp = await fetch(queryUrl);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status} — ${queryUrl}`);
-    geojson = await resp.json();
-  } catch (e) {
-    console.error('[threats.js] Fire points query failed:', e.message);
-    console.timeEnd(perfKey);
-    return;
+    // Direct FeatureServer query — returns GeoJSON, bypasses server renderer entirely
+    const queryUrl = `${FIRE_POINTS_URL}/0/query?` + new URLSearchParams({
+      where,
+      outFields:         '*',
+      f:                 'geojson',
+      returnGeometry:    'true',
+      resultRecordCount: '4000',
+    }).toString();
+
+    try {
+      const resp = await fetch(queryUrl);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status} — ${queryUrl}`);
+      geojson = await resp.json();
+      // Store in cache for instant re-use on return visits
+      _thFirePointsCache.set(yearKey, geojson);
+    } catch (e) {
+      console.error('[threats.js] Fire points query failed:', e.message);
+      console.timeEnd(perfKey);
+      return;
+    }
+  } else {
+    console.log(`[threats.js] Fire points cache hit for year ${_thFireYear}`);
   }
 
   const count = geojson.features?.length ?? 0;
-  console.log(`[threats.js] Fire points loaded: ${count} features for year ${_thFireYear}`);
-
+  console.log(`[threats.js] Fire points for year ${_thFireYear}: ${count} features`);
   if (count === 0) {
-    console.warn(`[threats.js] Fire points: no features returned for year ${_thFireYear} — WHERE="${where}"`);
+    console.warn(`[threats.js] Fire points: no features for year ${_thFireYear}`);
   }
 
   // Fire point icon — small cross + centre dot, matching ArcGIS Pro VIIRS fire symbology.
@@ -1291,6 +1411,13 @@ async function _thShowFirePoints() {
       `, { maxWidth: 240 });
     },
   }).addTo(_thMap);
+
+  // Fade the threats pane back in now that the new layer is in place
+  if (_tp) {
+    _tp.style.opacity = '1';
+    // Clean up inline transition after it completes
+    setTimeout(() => { if (_tp) _tp.style.transition = ''; }, 300);
+  }
 
   console.timeEnd(perfKey);
   _thShowLegend('fire-points');
@@ -1553,6 +1680,97 @@ function initThreatsPanel() {
 }
 
 // ============================================================
+// THREATS IN THE NEWS — floating panel
+// ============================================================
+
+function _thBuildMediaPanel() {
+  if (_thMediaPanelEl) return;   // already exists
+
+  const el = document.createElement('div');
+  el.id        = 'th-news-panel';
+  el.className = 'th-news-panel';
+
+  el.innerHTML = `
+    <div class="th-news-header">
+      <span class="th-news-title">📰 Threats in the News</span>
+      <button class="th-news-toggle" title="Collapse">▲</button>
+    </div>
+    <div class="th-news-body">
+      <div class="th-news-filters">
+        <button class="th-news-cat active" data-cat="all">All</button>
+        <button class="th-news-cat" data-cat="agriculture">🌾 Agri</button>
+        <button class="th-news-cat" data-cat="mining">⛏ Mining</button>
+        <button class="th-news-cat" data-cat="urban">🏙 Urban</button>
+        <button class="th-news-cat" data-cat="fire">🔥 Fire</button>
+        <button class="th-news-cat" data-cat="water">💧 Water</button>
+      </div>
+      <div class="th-news-list"></div>
+    </div>
+  `;
+
+  // Inject into the map container so it floats over the map
+  const mapContainer = document.getElementById('map-main');
+  if (mapContainer) mapContainer.appendChild(el);
+
+  _thMediaPanelEl = el;
+
+  // Wire collapse toggle
+  el.querySelector('.th-news-toggle').addEventListener('click', () => {
+    _thMediaCollapsed = !_thMediaCollapsed;
+    const body   = el.querySelector('.th-news-body');
+    const toggle = el.querySelector('.th-news-toggle');
+    body.style.display   = _thMediaCollapsed ? 'none' : '';
+    toggle.textContent   = _thMediaCollapsed ? '▼' : '▲';
+    toggle.title         = _thMediaCollapsed ? 'Expand' : 'Collapse';
+  });
+
+  // Wire category filters
+  el.querySelectorAll('.th-news-cat').forEach(btn => {
+    btn.addEventListener('click', () => {
+      _thMediaCatFilter = btn.dataset.cat;
+      el.querySelectorAll('.th-news-cat').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      _thRenderMediaPanel();
+    });
+  });
+
+  _thRenderMediaPanel();
+}
+
+function _thRenderMediaPanel() {
+  if (!_thMediaPanelEl) return;
+  const list = _thMediaPanelEl.querySelector('.th-news-list');
+  if (!list) return;
+
+  const items = _thMediaCatFilter === 'all'
+    ? THREAT_MEDIA_ITEMS
+    : THREAT_MEDIA_ITEMS.filter(i => i.category === _thMediaCatFilter);
+
+  if (items.length === 0) {
+    list.innerHTML = '<p class="th-news-empty">No articles for this category.</p>';
+    return;
+  }
+
+  list.innerHTML = items.map(item => `
+    <a class="th-news-item" href="${item.url}" target="_blank" rel="noopener noreferrer">
+      <div class="th-news-item-top">
+        <span class="th-news-icon">${item.icon}</span>
+        <span class="th-news-item-title">${item.title}</span>
+      </div>
+      <div class="th-news-source">${item.source}</div>
+      <div class="th-news-desc">${item.description}</div>
+    </a>
+  `).join('');
+}
+
+function _thDestroyMediaPanel() {
+  if (_thMediaPanelEl) {
+    _thMediaPanelEl.remove();
+    _thMediaPanelEl = null;
+  }
+}
+
+// ============================================================
 // WIRE — called on every panel visit after HTML is injected
 // ============================================================
 
@@ -1638,6 +1856,9 @@ function wireThreatsPanel() {
   // Restore UI state from previous visit, then apply current mode
   _updateThreatsUI();
   _thApplyMode();
+
+  // Build the floating Threats in the News panel
+  _thBuildMediaPanel();
 }
 
 // ============================================================
@@ -1648,6 +1869,7 @@ function cleanupThreatsPanel() {
   _thClearOverlays();     // hides GL canvas, removes featureLayers, clears fire layers
   _thHideLegend();
   _thRestoreBasemap();    // restore hillshade if it was hidden
+  _thDestroyMediaPanel(); // remove the Threats in the News panel
 }
 
 // ============================================================
