@@ -1088,6 +1088,13 @@ function initWelcomeScreen() {
   const btn    = document.getElementById('enter-map-btn');
   if (!screen || !btn) return;
 
+  // Set background image via JS so the path resolves relative to the HTML
+  // document rather than the stylesheet, avoiding CSS url() resolution issues.
+  screen.style.backgroundImage = [
+    'linear-gradient(160deg, rgba(8,22,14,0.45) 0%, rgba(10,28,18,0.65) 55%, rgba(5,15,10,0.78) 100%)',
+    'url("Photos/Blackwhite.jpg")',
+  ].join(', ');
+
   // Dismiss handler
   function dismiss() {
     screen.classList.add('leaving');

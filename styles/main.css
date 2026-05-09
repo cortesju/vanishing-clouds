@@ -4002,15 +4002,10 @@ body.terrain-active .leaflet-control-scale {
   justify-content: center;
   overflow: hidden;
 
-  /* B&W páramo photo with a dark-green cinematic wash */
-  background-image:
-    linear-gradient(
-      160deg,
-      rgba(8, 22, 14, 0.55) 0%,
-      rgba(10, 28, 18, 0.72) 60%,
-      rgba(5, 15, 10, 0.80) 100%
-    ),
-    url("../Photos/Blackwhite.jpg");
+  /* Dark-green fallback — JS overlays the B&W photo on top of this */
+  background-color: #090F0B;
+  /* Gradient wash set here; photo URL injected by initWelcomeScreen() in main.js
+     so the path resolves relative to the HTML document, not the stylesheet. */
   background-size: cover;
   background-position: center 30%;
 
@@ -4084,11 +4079,11 @@ body.terrain-active .leaflet-control-scale {
 }
 
 .welcome-title {
-  font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
-  font-size: clamp(3.4rem, 10vw, 7.2rem);
-  font-weight: 300;
-  line-height: 0.95;
-  letter-spacing: -0.01em;
+  font-family: "Helvetica Neue", HelveticaNeue, Helvetica, Arial, sans-serif;
+  font-size: clamp(3.2rem, 10vw, 7rem);
+  font-weight: 900;
+  line-height: 0.92;
+  letter-spacing: -0.03em;
   color: #F5F0E8;   /* warm off-white */
   margin: 0 0 1rem;
   text-shadow: 0 2px 40px rgba(0,0,0,0.45);
