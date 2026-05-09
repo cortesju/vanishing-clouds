@@ -4044,7 +4044,7 @@ body.terrain-active .leaflet-control-scale {
 
 .v360-modal {
   position: absolute;
-  bottom: 2.2rem;
+  bottom: calc(var(--data-strip-h) + 1rem);   /* always above data strip */
   right: 1.4rem;
   z-index: 8500;
   width: 280px;
@@ -4065,6 +4065,11 @@ body.terrain-active .leaflet-control-scale {
   opacity: 0;
   transform: translateY(12px);
   pointer-events: none;
+}
+
+/* Bump modal above terrain cross-section panel when it's open */
+body.terrain-active .v360-modal {
+  bottom: calc(var(--data-strip-h) + var(--profile-h) + 1rem);
 }
 
 .v360-modal-close {
