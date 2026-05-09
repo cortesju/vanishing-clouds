@@ -140,11 +140,12 @@ const ERA_COLORS = {
 };
 
 const URGENCY_COLORS = {
-  veryLow:  '#FFFFCC',
-  low:      '#C7E9B4',
-  moderate: '#7FCDBB',
-  high:     '#F4A261',
-  veryHigh: '#C0392B',
+  veryLow:  '#F4F1C2',   // pale cream
+  low:      '#CFE8B8',   // soft green
+  moderate: '#79C7B5',   // muted teal
+  high:     '#E6A15D',   // soft orange
+  veryHigh: '#C94A38',   // muted red
+  noData:   '#C8C8C0',   // neutral gray for unmatched páramos
 };
 
 
@@ -297,7 +298,7 @@ const LG = {
   fire:            null,
   urban:           null,
   mining:          null,
-  urgencyHexagons: null,
+  urgencyParamos:  null,   // official paramo polygons styled by urgency score
 };
 window.LG = LG;   // expose to terrain-profile.js and other modules
 
@@ -319,7 +320,7 @@ const PANEL_LAYERS = {
   species:   ['paramoOutline', 'speciesHexLayer'],    // hex richness is default; points built lazily
   // threats: managed entirely by threats.js — no base layers from PANEL_LAYERS
   threats:   [],
-  urgency:   ['urgencyHexagons', 'paramoOutline'],
+  urgency:   ['urgencyParamos'],   // single layer covers all paramo boundaries styled by score
   about:     ['paramoFill', 'paramoOutline'],
 };
 
@@ -375,6 +376,13 @@ function getUrgencyColor(score) {
   if (score >= 3.0) return URGENCY_COLORS.moderate;
   if (score >= 2.0) return URGENCY_COLORS.low;
   return URGENCY_COLORS.veryLow;
+}
+
+// Normalize a páramo name for fuzzy matching between urgency GeoJSON and FeatureServer
+// Strips accents, lowercases, collapses punctuation → "Santurbán" === "santurban"
+function _normalizeParamoName(s) {
+  return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
 function lngLatToLatLng(coords) {
@@ -1592,43 +1600,94 @@ function buildThreatLayers() {
   });
 }
 
-// ---- Urgency hexagon layer ----
+// ---- Urgency páramo layer ----
+// Styles official páramo complex boundaries by urgency score.
+// Urgency data from urgency_index.geojson is aggregated (max score per
+// complex) and matched to FeatureServer polygons via normalized name lookup.
 function buildUrgencyLayer() {
-  if (LG.urgencyHexagons) map.removeLayer(LG.urgencyHexagons);
+  if (LG.urgencyParamos) {
+    if (map.hasLayer(LG.urgencyParamos)) map.removeLayer(LG.urgencyParamos);
+    LG.urgencyParamos = null;
+  }
 
-  // Filter to only features that have a paramo_name (i.e. are inside official boundaries)
-  const urgencyInside = DATA.urgency
-    ? { ...DATA.urgency, features: (DATA.urgency.features || []).filter(f => {
-        const nm = f.properties?.paramo_name;
-        return nm && String(nm).trim() !== '' && String(nm).toLowerCase() !== 'null';
-      }) }
-    : DATA.urgency;
+  // ── Build max-score lookup: normalizedName → { score, cls, richness, threat } ──
+  const urgencyByName = {};
+  (DATA.urgency?.features || []).forEach(f => {
+    const p = f.properties || {};
+    if (!p.paramo_name) return;
+    const key = _normalizeParamoName(p.paramo_name);
+    const existing = urgencyByName[key];
+    if (!existing || p.urgency_score > existing.score) {
+      urgencyByName[key] = {
+        score:   p.urgency_score,
+        cls:     p.urgency_class,
+        richness: p.endemic_richness_score,
+        threat:  p.dominant_threat,
+        rawName: p.paramo_name,
+      };
+    }
+  });
 
-  LG.urgencyHexagons = L.geoJSON(urgencyInside, {
+  // Helper: look up urgency entry by pacomplejo name (tolerates accent/case diffs)
+  function _lookupUrgency(pacomplejo) {
+    return urgencyByName[_normalizeParamoName(pacomplejo)] || null;
+  }
+
+  LG.urgencyParamos = L.esri.featureLayer({
+    url: PARAMO_FEATURE_URL,
     style(feature) {
-      const color = getUrgencyColor(feature.properties?.urgency_score || 0);
-      return { fillColor: color, color: 'rgba(255,255,255,0.5)', weight: 0.8, fillOpacity: 0.75 };
+      const u = _lookupUrgency(feature.properties?.pacomplejo);
+      if (!u) {
+        // No urgency data — muted neutral
+        return { fillColor: URGENCY_COLORS.noData, color: 'rgba(255,255,255,0.6)', weight: 0.8, fillOpacity: 0.30 };
+      }
+      return {
+        fillColor:   getUrgencyColor(u.score),
+        color:       'rgba(255,255,255,0.8)',
+        weight:      0.8,
+        fillOpacity: 0.62,
+      };
     },
     onEachFeature(feature, layer) {
       const p = feature.properties || {};
-      const color = getUrgencyColor(p.urgency_score || 0);
-      layer.bindTooltip(
-        `<div style="font-family:Inter,sans-serif;font-size:11px;padding:3px 6px"><strong style="color:${color}">${p.urgency_class}</strong><br>${p.paramo_name || ''}</div>`,
-        { sticky: true, direction: 'top', opacity: 1 }
-      );
+      const name = p.pacomplejo || p.pacodigo || 'Páramo';
+      const u    = _lookupUrgency(p.pacomplejo);
+      const color = u ? getUrgencyColor(u.score) : URGENCY_COLORS.noData;
+
+      // Tooltip
+      const tooltipHtml = u
+        ? `<div style="font-family:Inter,sans-serif;font-size:11px;padding:3px 6px">
+             <strong style="color:${color}">${u.cls}</strong><br>${name}
+           </div>`
+        : `<div style="font-family:Inter,sans-serif;font-size:11px;padding:3px 6px">
+             <strong style="color:#888">No data</strong><br>${name}
+           </div>`;
+      layer.bindTooltip(tooltipHtml, { sticky: true, direction: 'top', opacity: 1 });
+
+      // Popup
+      const scoreRow = u ? `<tr><td style="color:#888;padding:2px 0">Urgency score</td><td style="font-weight:600">${u.score.toFixed(2)}</td></tr>` : '';
+      const richRow  = u && u.richness != null ? `<tr><td style="color:#888;padding:2px 0">Endemic richness</td><td style="font-weight:600">${u.richness}/5</td></tr>` : '';
+      const threatRow= u && u.threat ? `<tr><td style="color:#888;padding:2px 0">Dominant threat</td><td style="font-weight:600">${u.threat}</td></tr>` : '';
+      const badge    = u
+        ? `<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;background:${color};color:${(color === URGENCY_COLORS.veryLow || color === URGENCY_COLORS.noData) ? '#555' : '#fff'}">${u.cls}</span>`
+        : `<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600;background:#e0e0dc;color:#777">No data</span>`;
+
       layer.bindPopup(`
-        <div style="font-family:Inter,sans-serif;padding:10px 12px;min-width:190px;">
-          <h4 style="margin:0 0 6px;font-family:'Playfair Display',serif;font-size:14px;color:#1B5E3B">${p.paramo_name || 'Area'}</h4>
-          <span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;background:${color};color:${color === '#FFFFCC' ? '#666' : '#fff'}">${p.urgency_class}</span>
+        <div style="font-family:Inter,sans-serif;padding:10px 12px;min-width:200px;">
+          <h4 style="margin:0 0 6px;font-family:'Playfair Display',serif;font-size:14px;color:#1B5E3B">${name}</h4>
+          ${badge}
           <table style="width:100%;font-size:11px;margin-top:8px;border-collapse:collapse">
-            <tr><td style="color:#888;padding:2px 0">Urgency score</td><td style="font-weight:600">${p.urgency_score?.toFixed(2)}</td></tr>
-            <tr><td style="color:#888;padding:2px 0">Endemic richness</td><td style="font-weight:600">${p.endemic_richness_score}/5</td></tr>
-            <tr><td style="color:#888;padding:2px 0">Dominant threat</td><td style="font-weight:600">${p.dominant_threat}</td></tr>
+            ${scoreRow}${richRow}${threatRow}
           </table>
         </div>
-      `, { maxWidth: 240 });
-      layer.on('mouseover', function() { if (_mapMoving) return; this.setStyle({ fillOpacity: 0.92, weight: 2 }); this.bringToFront(); });
-      layer.on('mouseout',  function() { LG.urgencyHexagons.resetStyle(this); });
+      `, { maxWidth: 260 });
+
+      layer.on('mouseover', function() {
+        if (_mapMoving) return;
+        this.setStyle({ color: '#1F2937', weight: 2, fillOpacity: u ? 0.80 : 0.45 });
+        this.bringToFront();
+      });
+      layer.on('mouseout', function() { LG.urgencyParamos.resetStyle(this); });
     },
   });
 }
@@ -1843,7 +1902,7 @@ window.setLayerOpacity = function(key, opacity) {
     urban:           0.55,
     mining:          0.60,
     fire:            0.80,
-    urgencyHexagons: 0.75,
+    urgencyParamos:  0.62,
   };
   const baseFill = BASE_FILL[key] ?? 0.70;
 
@@ -1927,9 +1986,9 @@ function _destroySpeciesLayers() {
 }
 
 function _destroyUrgencyLayers() {
-  if (LG.urgencyHexagons) {
-    if (map.hasLayer(LG.urgencyHexagons)) map.removeLayer(LG.urgencyHexagons);
-    LG.urgencyHexagons = null;
+  if (LG.urgencyParamos) {
+    if (map.hasLayer(LG.urgencyParamos)) map.removeLayer(LG.urgencyParamos);
+    LG.urgencyParamos = null;
   }
   _panelLayersBuilt.urgency = false;
   console.log('[isolation] urgency layers destroyed');

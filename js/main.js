@@ -273,15 +273,16 @@ const PANEL_TEMPLATES = {
     <div class="panel-section urgency-panel">
       <span class="panel-eyebrow">CONSERVATION</span>
       <h2 class="panel-title">Where Protection Matters Most</h2>
-      <p class="panel-lead">A composite urgency score combining endemic richness, habitat loss, and threat pressure across 45 hexagonal zones.</p>
-      <p class="urgency-boundary-note" style="font-size:0.78rem;color:var(--text-medium);background:rgba(27,94,59,0.06);border-radius:6px;padding:0.5rem 0.75rem;margin-bottom:0.5rem;">Urgency scores are shown only within official páramo boundaries.</p>
+      <p class="panel-lead">A composite urgency score combining endemic richness, habitat loss, and threat pressure — mapped directly onto official páramo complex boundaries.</p>
+      <p class="urgency-boundary-note" style="font-size:0.78rem;color:var(--text-medium);background:rgba(27,94,59,0.06);border-radius:6px;padding:0.5rem 0.75rem;margin-bottom:0.5rem;">Urgency scores are displayed using official páramo complex boundaries. Colors represent relative conservation urgency within each páramo, not areas outside the ecosystem boundary.</p>
       <p class="panel-note" style="font-size:0.78rem;color:var(--text-medium);background:rgba(196,139,30,0.08);border-radius:6px;padding:0.5rem 0.75rem;margin-bottom:0.75rem;">Note: This section is still a work in progress. Urgency results are being refined and should be interpreted as a preliminary visualization.</p>
       <div class="urgency-legend-panel">
-        <div class="legend-item"><span class="legend-color" style="background:#FFFFCC;border:1px solid #ccc"></span> Very Low (1–2)</div>
-        <div class="legend-item"><span class="legend-color" style="background:#C7E9B4"></span> Low (2–3)</div>
-        <div class="legend-item"><span class="legend-color" style="background:#7FCDBB"></span> Moderate (3–4)</div>
-        <div class="legend-item"><span class="legend-color" style="background:#F4A261"></span> High (4–4.7)</div>
-        <div class="legend-item"><span class="legend-color" style="background:#C0392B"></span> Very High (4.8–5)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#F4F1C2;border:1px solid #d0ceaa"></span> Very Low (1–2)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#CFE8B8"></span> Low (2–3)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#79C7B5"></span> Moderate (3–4)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#E6A15D"></span> High (4–4.7)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#C94A38"></span> Very High (4.8–5)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#C8C8C0;opacity:0.5"></span> No data</div>
       </div>
       <div class="chart-wrapper">
         <canvas id="urgency-donut"></canvas>
